@@ -23,7 +23,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/demo-login/{role}', [AuthController::class, 'quickLogin'])->name('demo.login');
+
+    if (app()->environment('local')) {
+        Route::get('/demo-login/{role}', [AuthController::class, 'quickLogin'])->name('demo.login');
+    }
 });
 
 // Authenticated routes
@@ -70,7 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
 
     // Admin & Moderation Console
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::middleware('moderator')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/verifications', [AdminController::class, 'verifications'])->name('verifications');
         Route::post('/verifications/{id}/approve', [AdminController::class, 'approveVerification'])->name('verifications.approve');

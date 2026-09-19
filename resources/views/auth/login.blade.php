@@ -45,26 +45,28 @@
                 </button>
             </form>
 
-            <!-- Quick Demo One-Click Access -->
-            <div class="mt-8 pt-6 border-t border-slate-100">
-                <span class="block text-[11px] uppercase font-bold text-slate-400 tracking-wider text-center mb-3">
-                    ⚡ Quick Demo Login (1-Click)
-                </span>
-                <div class="grid grid-cols-2 gap-2 text-xs font-medium">
-                    <a href="{{ route('demo.login', 'groom') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-center transition">
-                        🧔 Groom (Zayd)
-                    </a>
-                    <a href="{{ route('demo.login', 'bride') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-center transition">
-                        🧕 Bride (Maryam)
-                    </a>
-                    <a href="{{ route('demo.login', 'wali') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-center transition">
-                        🛡️ Wali (Father)
-                    </a>
-                    <a href="{{ route('demo.login', 'admin') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 hover:text-rose-800 border border-slate-200 text-center transition">
-                        👑 Admin Console
-                    </a>
+            @if (app()->isLocal())
+                <!-- Quick Demo One-Click Access -->
+                <div class="mt-8 pt-6 border-t border-slate-100">
+                    <span class="block text-[11px] uppercase font-bold text-slate-400 tracking-wider text-center mb-3">
+                        ⚡ Quick Demo Login (1-Click)
+                    </span>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+                        <a href="{{ route('demo.login', 'groom') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-center transition">
+                            🧔 Groom (Zayd)
+                        </a>
+                        <a href="{{ route('demo.login', 'bride') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-center transition">
+                            🧕 Bride (Maryam)
+                        </a>
+                        <a href="{{ route('demo.login', 'wali') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-center transition">
+                            🛡️ Wali (Father)
+                        </a>
+                        <a href="{{ route('demo.login', 'admin') }}" class="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 hover:text-rose-800 border border-slate-200 text-center transition">
+                            👑 Admin Console
+                        </a>
+                    </div>
                 </div>
-            </div>
+            @endif
 
             <div class="text-center mt-6 pt-4 text-xs text-slate-500">
                 Looking to find a spouse? <a href="{{ route('register') }}" class="font-bold text-emerald-700 hover:text-emerald-800">Create a new profile</a>

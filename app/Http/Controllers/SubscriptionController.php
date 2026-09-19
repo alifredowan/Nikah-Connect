@@ -21,7 +21,7 @@ class SubscriptionController extends Controller
             'premium_plus' => Subscription::getPlanDetails('premium_plus'),
         ];
 
-        $currentPlan = $user->plan;
+        $currentPlan = $user?->plan;
 
         return view('subscription.pricing', compact('plans', 'currentPlan'));
     }

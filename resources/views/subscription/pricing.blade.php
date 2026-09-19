@@ -37,7 +37,11 @@
                     </ul>
                 </div>
                 <div class="mt-8">
-                    @if($currentPlan === 'free')
+                    @if($currentPlan === null)
+                        <a href="{{ route('register') }}" class="block text-center w-full py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition">
+                            Get Started for Free
+                        </a>
+                    @elseif($currentPlan === 'free')
                         <button disabled class="w-full py-3 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed">
                             Current Active Plan
                         </button>
