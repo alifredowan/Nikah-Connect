@@ -47,42 +47,38 @@
                 <div class="lg:col-span-5">
                     <div class="relative mx-auto max-w-md bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl">
                         <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
-                            <span class="text-xs uppercase font-bold tracking-wider text-emerald-200">Featured Islamic Profile</span>
-                            <span class="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/40">
-                                <svg class="w-3 h-3 text-blue-400 fill-current" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
-                                Verified Candidate
+                            <span class="text-xs uppercase font-bold tracking-wider text-emerald-200">Islamic Matchmaking Standard</span>
+                            <span class="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
+                                🛡️ Halal Certified
                             </span>
                         </div>
                         <div class="space-y-4">
-                            <div class="flex items-center gap-4">
-                                <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-400/60 bg-slate-800">
-                                    @php $showcasePhoto = $recentProfiles->firstWhere('user.gender', 'female')?->primaryPhoto; @endphp
-                                    @if($showcasePhoto)
-                                        <img src="{{ $showcasePhoto->displayUrl() }}" alt="Avatar" class="w-full h-full object-cover photo-blur">
-                                    @else
-                                        <div class="w-full h-full flex items-center justify-center bg-emerald-900 text-white font-bold text-xl">M</div>
-                                    @endif
-                                    <div class="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] text-white font-medium text-center px-1">
-                                        🔒 Blurred
-                                    </div>
-                                </div>
+                            <div class="flex items-center gap-3.5 p-3 rounded-xl bg-white/5 border border-white/10">
+                                <span class="w-10 h-10 rounded-lg bg-emerald-800/80 flex items-center justify-center text-lg shrink-0">🛡️</span>
                                 <div>
-                                    <h3 class="text-lg font-bold text-white">Maryam Al-Mansoor</h3>
-                                    <p class="text-xs text-emerald-200">25 yrs • London, United Kingdom</p>
-                                    <div class="flex items-center gap-1.5 mt-1">
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-800 text-emerald-200">Sunni - Hanafi</span>
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300">5x Daily Prayer</span>
-                                    </div>
+                                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">Guardian (Wali) Involvement</h4>
+                                    <p class="text-[11px] text-emerald-100/80 mt-0.5">Dignified chaperone participation to protect every introduction.</p>
                                 </div>
                             </div>
-                            <div class="bg-black/20 rounded-xl p-3.5 border border-white/10 text-xs text-emerald-100/90 leading-relaxed">
-                                <p class="italic">"Looking for a practicing brother who prioritizes deen and family values. My father (Wali) is linked and actively oversees introductions."</p>
+                            <div class="flex items-center gap-3.5 p-3 rounded-xl bg-white/5 border border-white/10">
+                                <span class="w-10 h-10 rounded-lg bg-amber-800/60 flex items-center justify-center text-lg shrink-0">🔒</span>
+                                <div>
+                                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">Photo Privacy by Default</h4>
+                                    <p class="text-[11px] text-emerald-100/80 mt-0.5">Photos remain blurred until mutual interest is formally confirmed.</p>
+                                </div>
                             </div>
-                            <div class="flex items-center justify-between text-xs pt-1">
-                                <span class="text-emerald-300 flex items-center gap-1">
-                                    <span>🛡️</span> Wali Approval Required
+                            <div class="flex items-center gap-3.5 p-3 rounded-xl bg-white/5 border border-white/10">
+                                <span class="w-10 h-10 rounded-lg bg-blue-800/60 flex items-center justify-center text-lg shrink-0">🪪</span>
+                                <div>
+                                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">Verified Identity (KYC)</h4>
+                                    <p class="text-[11px] text-emerald-100/80 mt-0.5">Human moderator review of official national ID & passport documents.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs pt-2 border-t border-white/10">
+                                <span class="text-emerald-300 font-semibold flex items-center gap-1.5">
+                                    <span>✓</span> Zero Tolerance for Dating
                                 </span>
-                                <span class="text-amber-300 font-semibold">94% Compatibility Match</span>
+                                <span class="text-amber-300 font-semibold">100% Strictly for Nikah</span>
                             </div>
                         </div>
                     </div>
@@ -152,57 +148,59 @@
     </div>
 
     <!-- Recent Candidate Profiles Showcase -->
-    <div class="py-16 bg-white border-t border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row items-start md:items-end justify-between mb-10 gap-4">
-                <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Verified Community</span>
-                    <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Recent Candidate Profiles</h2>
-                </div>
-                <a href="{{ route('discovery.index') }}" class="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
-                    View all candidates &rarr;
-                </a>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                @foreach($recentProfiles as $profile)
-                    <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg transition group">
-                        <div class="relative h-48 bg-slate-800 overflow-hidden">
-                            @if($profile->primaryPhoto)
-                                <img src="{{ $profile->primaryPhoto->displayUrl() }}" alt="{{ $profile->user->name }}" class="w-full h-full object-cover photo-blur group-hover:scale-105 transition transform duration-300">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center bg-emerald-950 text-white font-bold text-3xl">
-                                    {{ substr($profile->user->name, 0, 1) }}
-                                </div>
-                            @endif
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                            <div class="absolute top-3 right-3">
-                                @if($profile->user->is_verified)
-                                    <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                        ✓ Verified
-                                    </span>
-                                @endif
-                            </div>
-                            <div class="absolute bottom-3 left-3 right-3 text-white">
-                                <p class="text-xs text-amber-300 font-semibold">{{ $profile->sect_madhhab ?? 'Muslim' }}</p>
-                                <h4 class="font-bold text-base truncate">{{ $profile->user->name }}</h4>
-                                <p class="text-xs text-slate-200">{{ $profile->user->age }} yrs • {{ $profile->city }}, {{ $profile->country }}</p>
-                            </div>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            <div class="flex items-center justify-between text-xs text-slate-600">
-                                <span>🕌 {{ str_replace('_', ' ', $profile->prayer_frequency ?? 'Practicing') }}</span>
-                                <span>🎓 {{ Str::limit($profile->profession ?? 'Professional', 16) }}</span>
-                            </div>
-                            <a href="{{ route('discovery.show', $profile->user_id) }}" class="block text-center w-full py-2.5 rounded-xl bg-white hover:bg-emerald-600 hover:text-white border border-slate-200 hover:border-emerald-600 text-xs font-bold text-slate-700 transition">
-                                View Profile
-                            </a>
-                        </div>
+    @if($recentProfiles->isNotEmpty())
+        <div class="py-16 bg-white border-t border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row items-start md:items-end justify-between mb-10 gap-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Verified Community</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Recent Candidate Profiles</h2>
                     </div>
-                @endforeach
+                    <a href="{{ route('discovery.index') }}" class="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
+                        View all candidates &rarr;
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    @foreach($recentProfiles as $profile)
+                        <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg transition group">
+                            <div class="relative h-48 bg-slate-800 overflow-hidden">
+                                @if($profile->primaryPhoto)
+                                    <img src="{{ $profile->primaryPhoto->displayUrl() }}" alt="{{ $profile->user->name }}" class="w-full h-full object-cover photo-blur group-hover:scale-105 transition transform duration-300">
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center bg-emerald-950 text-white font-bold text-3xl">
+                                        {{ substr($profile->user->name, 0, 1) }}
+                                    </div>
+                                @endif
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                                <div class="absolute top-3 right-3">
+                                    @if($profile->user->is_verified)
+                                        <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                            ✓ Verified
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="absolute bottom-3 left-3 right-3 text-white">
+                                    <p class="text-xs text-amber-300 font-semibold">{{ $profile->sect_madhhab ?? 'Muslim' }}</p>
+                                    <h4 class="font-bold text-base truncate">{{ $profile->user->name }}</h4>
+                                    <p class="text-xs text-slate-200">{{ $profile->user->age }} yrs • {{ $profile->city }}, {{ $profile->country }}</p>
+                                </div>
+                            </div>
+                            <div class="p-4 space-y-3">
+                                <div class="flex items-center justify-between text-xs text-slate-600">
+                                    <span>🕌 {{ str_replace('_', ' ', $profile->prayer_frequency ?? 'Practicing') }}</span>
+                                    <span>🎓 {{ Str::limit($profile->profession ?? 'Professional', 16) }}</span>
+                                </div>
+                                <a href="{{ route('discovery.show', $profile->user_id) }}" class="block text-center w-full py-2.5 rounded-xl bg-white hover:bg-emerald-600 hover:text-white border border-slate-200 hover:border-emerald-600 text-xs font-bold text-slate-700 transition">
+                                    View Profile
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
-    </div>
+    @endif
 
     <!-- Pricing Tiers Comparison Section (FR-5.1) -->
     <div class="py-20 bg-slate-50 border-t border-slate-200">

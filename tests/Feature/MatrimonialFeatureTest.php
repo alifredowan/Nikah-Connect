@@ -124,10 +124,22 @@ class MatrimonialFeatureTest extends TestCase
 
     public function test_photo_is_server_side_protected_for_unauthorized_guests(): void
     {
-        $bride = User::where('email', 'seeker.bride@nikahconnect.test')->first();
-        $this->assertNotNull($bride);
-        $primaryPhoto = $bride->profile?->primaryPhoto;
-        $this->assertNotNull($primaryPhoto);
+        $bride = User::create([
+            'name' => 'Test Bride',
+            'email' => 'photo.test@nikahconnect.test',
+            'password' => bcrypt('password'),
+            'role' => 'seeker',
+            'gender' => 'female',
+            'is_active' => true,
+        ]);
+        $profile = Profile::create(['user_id' => $bride->id, 'wali_required' => true]);
+        $primaryPhoto = \App\Models\Photo::create([
+            'profile_id' => $profile->id,
+            'file_path' => 'https://example.com/test.jpg',
+            'is_primary' => true,
+            'is_blurred' => true,
+            'moderation_status' => 'approved',
+        ]);
 
         // Guest requesting photo endpoint directly
         $response = $this->get(route('photos.view', $primaryPhoto->id));

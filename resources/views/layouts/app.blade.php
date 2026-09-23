@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Nikah Connect - Muslim Matrimonial Platform')</title>
+
+    <!-- Theme Initialization (Prevent FOUC) -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 
     <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,6 +36,9 @@
             background: rgba(255, 255, 255, 0.94);
             backdrop-filter: blur(12px);
         }
+        .dark .glass-header {
+            background: rgba(15, 23, 42, 0.92);
+        }
         .photo-blur {
             filter: blur(14px);
             transition: filter 0.3s ease;
@@ -36,12 +48,10 @@
         }
     </style>
 </head>
-<body class="h-full flex flex-col text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
-
-
+<body class="h-full flex flex-col text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
 
     <!-- Main Navigation Header -->
-    <header class="sticky top-0 z-40 border-b border-slate-200/80 glass-header shadow-xs">
+    <header class="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800 glass-header shadow-xs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <!-- Brand Logo -->
@@ -53,21 +63,21 @@
                             </svg>
                         </div>
                         <div>
-                            <span class="font-heading font-extrabold text-xl tracking-tight text-emerald-950 flex items-center gap-1.5">
-                                Nikah<span class="text-amber-600">Connect</span>
+                            <span class="font-heading font-extrabold text-xl tracking-tight text-emerald-950 dark:text-emerald-100 flex items-center gap-1.5">
+                                Nikah<span class="text-amber-500">Connect</span>
                             </span>
-                            <span class="text-[10px] uppercase font-bold tracking-widest text-emerald-700 block -mt-1">Halal Matrimonial</span>
+                            <span class="text-[10px] uppercase font-bold tracking-widest text-emerald-700 dark:text-emerald-400 block -mt-1">Halal Matrimonial</span>
                         </div>
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
                 <nav class="hidden md:flex items-center gap-1">
-                    <a href="{{ route('discovery.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition">
+                    <a href="{{ route('discovery.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
                         Find Matches
                     </a>
                     @auth
-                        <a href="{{ route('interests.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition flex items-center gap-1.5">
+                        <a href="{{ route('interests.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition flex items-center gap-1.5">
                             Interests
                             @if(Auth::user()->receivedInterests()->where('status', 'pending')->count() > 0)
                                 <span class="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
@@ -75,35 +85,51 @@
                                 </span>
                             @endif
                         </a>
-                        <a href="{{ route('chat.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition">
+                        <a href="{{ route('chat.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
                             Messages
                         </a>
                         @if(Auth::user()->isWali() || Auth::user()->waliLinksAsWali()->exists())
-                            <a href="{{ route('wali.dashboard') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition flex items-center gap-1">
+                            <a href="{{ route('wali.dashboard') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition flex items-center gap-1">
                                 <span>🛡️ Wali Console</span>
                             </a>
                         @endif
                         @if(Auth::user()->isAdmin() || Auth::user()->isModerator())
-                            <a href="{{ route('admin.dashboard') }}" class="px-3.5 py-2 rounded-lg text-sm font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 transition flex items-center gap-1">
+                            <a href="{{ route('admin.dashboard') }}" class="px-3.5 py-2 rounded-lg text-sm font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition flex items-center gap-1">
                                 <span>⚡ Admin Panel</span>
                             </a>
                         @endif
                     @endauth
-                    <a href="{{ route('subscription.pricing') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition">
+                    <a href="{{ route('subscription.pricing') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
                         Plans & Pricing
                     </a>
                 </nav>
 
-                <!-- User Profile / Auth Area -->
-                <div class="flex items-center gap-3">
+                <!-- User Profile / Auth Area & Theme Toggle -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Dark / Light Mode Switcher Button -->
+                    <button type="button"
+                            id="theme-toggle"
+                            aria-label="Toggle Dark / Light Mode"
+                            title="Toggle Dark / Light Mode"
+                            class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <!-- Sun Icon (Shown in Dark Mode) -->
+                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                        </svg>
+                        <!-- Moon Icon (Shown in Light Mode) -->
+                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-slate-600 dark:text-slate-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        </svg>
+                    </button>
+
                     @auth
                         <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" class="flex items-center gap-2.5 p-1.5 rounded-full hover:bg-slate-100 transition focus:outline-none">
-                                <div class="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold flex items-center justify-center text-sm shadow-xs">
+                            <button @click="open = !open" class="flex items-center gap-2.5 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none">
+                                <div class="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 font-bold flex items-center justify-center text-sm shadow-xs">
                                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                 </div>
                                 <div class="hidden md:block text-left">
-                                    <div class="text-xs font-bold text-slate-800 leading-tight flex items-center gap-1">
+                                    <div class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight flex items-center gap-1">
                                         {{ Str::limit(Auth::user()->name, 14) }}
                                         @if(Auth::user()->is_verified)
                                             <svg class="w-3.5 h-3.5 text-blue-500 fill-current inline" viewBox="0 0 20 20">
@@ -111,8 +137,8 @@
                                             </svg>
                                         @endif
                                     </div>
-                                    <div class="text-[10px] text-slate-500 font-medium capitalize">
-                                        {{ Auth::user()->role }} · <span class="text-amber-600 font-semibold">{{ Auth::user()->plan }}</span>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize">
+                                        {{ Auth::user()->role }} · <span class="text-amber-600 dark:text-amber-400 font-semibold">{{ Auth::user()->plan }}</span>
                                     </div>
                                 </div>
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,34 +147,34 @@
                             </button>
 
                             <!-- Dropdown Menu -->
-                            <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                                <div class="px-4 py-2 border-b border-slate-100">
-                                    <p class="text-xs font-semibold text-slate-900">{{ Auth::user()->name }}</p>
-                                    <p class="text-xs text-slate-500 truncate">{{ Auth::user()->email }}</p>
+                            <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                                <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                                    <p class="text-xs font-semibold text-slate-900 dark:text-white">{{ Auth::user()->name }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ Auth::user()->email }}</p>
                                 </div>
-                                <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
+                                <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-700 dark:hover:text-emerald-400">
                                     👤 My Profile & Photos
                                 </a>
-                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
+                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-700 dark:hover:text-emerald-400">
                                     ✏️ Edit Deen & Preferences
                                 </a>
-                                <a href="{{ route('wali.link') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
+                                <a href="{{ route('wali.link') }}" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-700 dark:hover:text-emerald-400">
                                     🛡️ Link Guardian (Wali)
                                 </a>
-                                <a href="{{ route('subscription.pricing') }}" class="block px-4 py-2 text-sm text-amber-700 font-medium hover:bg-amber-50">
+                                <a href="{{ route('subscription.pricing') }}" class="block px-4 py-2 text-sm text-amber-700 dark:text-amber-400 font-medium hover:bg-amber-50 dark:hover:bg-slate-800">
                                     ⭐ Membership Plan ({{ ucfirst(Auth::user()->plan) }})
                                 </a>
-                                <div class="border-t border-slate-100 my-1"></div>
+                                <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50">
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800">
                                         🚪 Sign Out
                                     </button>
                                 </form>
                             </div>
                         </div>
                     @else
-                        <a href="{{ route('login') }}" class="text-sm font-semibold text-slate-700 hover:text-emerald-700 px-3 py-2">
+                        <a href="{{ route('login') }}" class="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 px-3 py-2">
                             Log in
                         </a>
                         <a href="{{ route('register') }}" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-900/10 transition">
@@ -257,5 +283,33 @@
         </div>
     </footer>
 
+    <script>
+        (function() {
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+            const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+            function syncThemeIcons() {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    if (themeToggleLightIcon) themeToggleLightIcon.classList.remove('hidden');
+                    if (themeToggleDarkIcon) themeToggleDarkIcon.classList.add('hidden');
+                } else {
+                    if (themeToggleLightIcon) themeToggleLightIcon.classList.add('hidden');
+                    if (themeToggleDarkIcon) themeToggleDarkIcon.classList.remove('hidden');
+                }
+            }
+
+            syncThemeIcons();
+
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function() {
+                    const isDark = document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                    syncThemeIcons();
+                });
+            }
+        })();
+    </script>
 </body>
 </html>
