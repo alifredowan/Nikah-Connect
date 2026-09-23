@@ -12,16 +12,32 @@
                 <h1 class="text-2xl font-extrabold text-slate-900 font-heading">Administrative & Moderation Console</h1>
                 <p class="text-xs text-slate-500 mt-1">Platform governance, KYC verification queue, reports, and immutable audit logs (FR-7.1 - 7.5).</p>
             </div>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('admin.verifications') }}" class="px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs transition">
-                    🪪 KYC Queue ({{ $metrics['pending_verifications'] }})
-                </a>
-                <a href="{{ route('admin.reports') }}" class="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition">
-                    🚩 Reports ({{ $metrics['pending_reports'] }})
-                </a>
-                <a href="{{ route('admin.settings') }}" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs transition">
-                    ⚙️ Policy Settings
-                </a>
+            <div class="flex items-center gap-2 flex-wrap">
+                @if(Auth::user()->isSuperAdmin())
+                    <a href="{{ route('admin.staff') }}" class="px-3.5 py-2 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 font-bold text-xs transition flex items-center gap-1">
+                        🛡️ Staff & Access
+                    </a>
+                @endif
+                @if(Auth::user()->hasPermission('manage_verifications'))
+                    <a href="{{ route('admin.verifications') }}" class="px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs transition">
+                        🪪 KYC Queue ({{ $metrics['pending_verifications'] }})
+                    </a>
+                @endif
+                @if(Auth::user()->hasPermission('manage_reports'))
+                    <a href="{{ route('admin.reports') }}" class="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition">
+                        🚩 Reports ({{ $metrics['pending_reports'] }})
+                    </a>
+                @endif
+                @if(Auth::user()->hasPermission('manage_settings'))
+                    <a href="{{ route('admin.settings') }}" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs transition">
+                        ⚙️ Policy Settings
+                    </a>
+                @endif
+                @if(Auth::user()->hasPermission('view_audit_logs'))
+                    <a href="{{ route('admin.audit-logs') }}" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs transition">
+                        📋 Audit Logs
+                    </a>
+                @endif
             </div>
         </div>
 

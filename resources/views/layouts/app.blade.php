@@ -38,25 +38,7 @@
 </head>
 <body class="h-full flex flex-col text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
 
-    @if (app()->isLocal())
-        <!-- Quick Role Switcher Bar (For Seamless Testing & Demonstration) -->
-        <div class="bg-slate-900 text-slate-200 text-xs py-1.5 px-4 border-b border-slate-800">
-            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="font-medium text-slate-300">Demo Role Switcher:</span>
-                    <span class="text-slate-400">Instantly test different user perspectives</span>
-                </div>
-                <div class="flex items-center gap-2 overflow-x-auto">
-                    <a href="{{ route('demo.login', 'groom') }}" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white transition">🧔 Groom (Zayd)</a>
-                    <a href="{{ route('demo.login', 'bride') }}" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white transition">🧕 Bride (Maryam)</a>
-                    <a href="{{ route('demo.login', 'wali') }}" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white transition">🛡️ Wali (Father)</a>
-                    <a href="{{ route('demo.login', 'moderator') }}" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-amber-600 text-slate-200 hover:text-white transition">⚖️ Moderator</a>
-                    <a href="{{ route('demo.login', 'admin') }}" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white transition">👑 Admin</a>
-                </div>
-            </div>
-        </div>
-    @endif
+
 
     <!-- Main Navigation Header -->
     <header class="sticky top-0 z-40 border-b border-slate-200/80 glass-header shadow-xs">

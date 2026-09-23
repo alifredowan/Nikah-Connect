@@ -13,6 +13,7 @@ use App\Models\VerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -184,5 +185,122 @@ class AdminController extends Controller
         $logs = AuditLog::with('user')->latest('created_at')->paginate(25);
 
         return view('admin.audit-logs', compact('logs'));
+    }
+
+    public function staff(): View
+    {
+        $staffUsers = User::whereIn('role', ['super_admin', 'admin', 'moderator'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $availablePermissions = [
+            'manage_verifications' => 'KYC Profile & ID Verifications',
+            'manage_reports' => 'User Abuse Reports & Sanctions (Warn, Suspend, Ban)',
+            'view_audit_logs' => 'Audit Logs & Governance Tracking',
+            'manage_settings' => 'Platform Settings & Policies',
+        ];
+
+        return view('admin.staff', compact('staffUsers', 'availablePermissions'));
+    }
+
+    public function storeStaff(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'role' => ['required', 'in:super_admin,moderator'],
+            'password' => ['required', 'string', 'min:8'],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', 'in:manage_verifications,manage_reports,view_audit_logs,manage_settings'],
+        ]);
+
+        $permissions = $validated['role'] === 'super_admin'
+            ? array_keys([
+                'manage_verifications' => true,
+                'manage_reports' => true,
+                'view_audit_logs' => true,
+                'manage_settings' => true,
+            ])
+            : ($validated['permissions'] ?? []);
+
+        $staff = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'role' => $validated['role'],
+            'permissions' => $permissions,
+            'password' => Hash::make($validated['password']),
+            'gender' => 'male',
+            'dob' => '1990-01-01',
+            'marital_status' => 'never_married',
+            'is_verified' => true,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        AuditLog::record(Auth::id(), 'staff_member_created', 'User', $staff->id, [
+            'role' => $staff->role,
+            'permissions' => $staff->permissions,
+        ]);
+
+        return back()->with('success', "New staff member ({$staff->name} as ".ucwords(str_replace('_', ' ', $staff->role)).') created successfully!');
+    }
+
+    public function updateStaffPermissions(Request $request, int $id): RedirectResponse
+    {
+        $staff = User::findOrFail($id);
+
+        if ($staff->isSuperAdmin() && ! Auth::user()->isSuperAdmin()) {
+            abort(403, 'Only a Super Admin can modify other Super Admins.');
+        }
+
+        $validated = $request->validate([
+            'role' => ['nullable', 'in:super_admin,moderator'],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', 'in:manage_verifications,manage_reports,view_audit_logs,manage_settings'],
+        ]);
+
+        $updates = [
+            'permissions' => $validated['permissions'] ?? [],
+        ];
+
+        if (isset($validated['role'])) {
+            $updates['role'] = $validated['role'];
+            if ($validated['role'] === 'super_admin') {
+                $updates['permissions'] = [
+                    'manage_verifications',
+                    'manage_reports',
+                    'view_audit_logs',
+                    'manage_settings',
+                ];
+            }
+        }
+
+        $staff->update($updates);
+
+        AuditLog::record(Auth::id(), 'staff_permissions_updated', 'User', $staff->id, [
+            'permissions' => $staff->permissions,
+            'role' => $staff->role,
+        ]);
+
+        return back()->with('success', "Permissions updated for {$staff->name}.");
+    }
+
+    public function toggleStaffStatus(int $id): RedirectResponse
+    {
+        $staff = User::findOrFail($id);
+
+        if ($staff->id === Auth::id()) {
+            return back()->with('error', 'You cannot deactivate your own account.');
+        }
+
+        $staff->update(['is_active' => ! $staff->is_active]);
+
+        $statusText = $staff->is_active ? 'activated' : 'deactivated';
+
+        AuditLog::record(Auth::id(), "staff_{$statusText}", 'User', $staff->id);
+
+        return back()->with('success', "Staff account {$statusText} successfully.");
     }
 }

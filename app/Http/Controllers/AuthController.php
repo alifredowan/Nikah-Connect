@@ -25,17 +25,32 @@ class AuthController extends Controller
     {
         $maxBirthDate = Carbon::now()->subYears(18)->toDateString();
 
-        $validated = $request->validate([
+        $role = $request->input('role', 'seeker');
+        if (! in_array($role, ['seeker', 'wali'], true)) {
+            $role = 'seeker';
+        }
+        $request->merge(['role' => $role]);
+
+        $rules = [
+            'role' => ['required', 'in:seeker,wali'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['nullable', 'string', 'max:20', 'unique:users'],
             'gender' => ['required', 'in:male,female'],
             'dob' => ['required', 'date', "before_or_equal:{$maxBirthDate}"],
-            'marital_status' => ['required', 'in:never_married,divorced,widowed,annulled'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'terms' => ['accepted'],
-        ], [
-            'dob.before_or_equal' => 'You must be at least 18 years old to register for Nikah Connect (FR-1.3).',
+        ];
+
+        if ($role === 'seeker') {
+            $rules['marital_status'] = ['required', 'in:never_married,divorced,widowed,annulled'];
+        } else {
+            $rules['marital_status'] = ['nullable', 'in:never_married,divorced,widowed,annulled'];
+            $rules['relationship_type'] = ['nullable', 'string', 'in:father,brother,uncle,grandfather,other_mahram'];
+        }
+
+        $validated = $request->validate($rules, [
+            'dob.before_or_equal' => 'You must be at least 18 years old to register for Nikah Connect.',
         ]);
 
         $user = User::create([
@@ -44,33 +59,42 @@ class AuthController extends Controller
             'phone' => $validated['phone'] ?? null,
             'gender' => $validated['gender'],
             'dob' => $validated['dob'],
-            'marital_status' => $validated['marital_status'],
+            'marital_status' => $validated['marital_status'] ?? 'never_married',
             'password' => Hash::make($validated['password']),
-            'role' => 'seeker',
+            'role' => $role,
             'is_active' => true,
-            'email_verified_at' => now(), // Simulated instant verification for MVP
+            'email_verified_at' => now(),
         ]);
 
-        // Initialize user profile
-        Profile::create([
-            'user_id' => $user->id,
-            'wali_required' => ($validated['gender'] === 'female'),
-            'completeness_percentage' => 15,
-        ]);
+        if ($role === 'seeker') {
+            // Initialize user profile
+            Profile::create([
+                'user_id' => $user->id,
+                'wali_required' => ($validated['gender'] === 'female'),
+                'completeness_percentage' => 15,
+            ]);
 
-        // Initialize free subscription tier
-        Subscription::create([
-            'user_id' => $user->id,
-            'plan' => 'free',
-            'status' => 'active',
-            'starts_at' => now(),
-        ]);
+            // Initialize free subscription tier
+            Subscription::create([
+                'user_id' => $user->id,
+                'plan' => 'free',
+                'status' => 'active',
+                'starts_at' => now(),
+            ]);
 
-        AuditLog::record($user->id, 'user_registered', 'User', $user->id, ['email' => $user->email]);
+            AuditLog::record($user->id, 'user_registered', 'User', $user->id, ['role' => 'seeker', 'email' => $user->email]);
+
+            Auth::login($user);
+
+            return redirect()->route('profile.edit')->with('success', 'Account registered successfully! Please complete your Islamic profile.');
+        }
+
+        // Wali Registration
+        AuditLog::record($user->id, 'wali_registered', 'User', $user->id, ['role' => 'wali', 'email' => $user->email]);
 
         Auth::login($user);
 
-        return redirect()->route('profile.edit')->with('success', 'Account registered successfully! Please complete your Islamic profile.');
+        return redirect()->route('wali.link')->with('success', 'Guardian account created successfully! Please configure your ward (family member) details.');
     }
 
     public function showLogin(): View
@@ -97,7 +121,7 @@ class AuthController extends Controller
 
             AuditLog::record($user->id, 'user_login');
 
-            if ($user->isAdmin() || $user->isModerator()) {
+            if ($user->isSuperAdmin() || $user->isModerator()) {
                 return redirect()->route('admin.dashboard');
             }
 
@@ -123,34 +147,6 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('landing');
-    }
-
-    public function quickLogin(Request $request, string $role): RedirectResponse
-    {
-        $user = match ($role) {
-            'admin' => User::where('role', 'admin')->first(),
-            'moderator' => User::where('role', 'moderator')->first(),
-            'wali' => User::where('role', 'wali')->first(),
-            'bride' => User::where('gender', 'female')->where('role', 'seeker')->first(),
-            'groom' => User::where('gender', 'male')->where('role', 'seeker')->first(),
-            default => null,
-        };
-
-        if ($user) {
-            Auth::login($user);
-            $request->session()->regenerate();
-
-            if ($user->isAdmin() || $user->isModerator()) {
-                return redirect()->route('admin.dashboard');
-            }
-            if ($user->isWali()) {
-                return redirect()->route('wali.dashboard');
-            }
-
-            return redirect()->route('discovery.index');
-        }
-
-        return redirect()->route('login')->with('error', 'Demo user not found. Please seed the database first.');
     }
 
     public function deactivate(Request $request): RedirectResponse

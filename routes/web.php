@@ -23,10 +23,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-
-    if (app()->environment('local')) {
-        Route::get('/demo-login/{role}', [AuthController::class, 'quickLogin'])->name('demo.login');
-    }
 });
 
 // Authenticated routes
@@ -75,14 +71,38 @@ Route::middleware('auth')->group(function () {
     // Admin & Moderation Console
     Route::middleware('moderator')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-        Route::get('/verifications', [AdminController::class, 'verifications'])->name('verifications');
-        Route::post('/verifications/{id}/approve', [AdminController::class, 'approveVerification'])->name('verifications.approve');
-        Route::post('/verifications/{id}/reject', [AdminController::class, 'rejectVerification'])->name('verifications.reject');
-        Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
-        Route::post('/reports/{id}/action', [AdminController::class, 'actionReport'])->name('reports.action');
-        Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
-        Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
-        Route::post('/discounts', [AdminController::class, 'createDiscount'])->name('discounts.store');
-        Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('audit-logs');
+
+        // KYC & Verification Queue (manage_verifications permission)
+        Route::middleware('permission:manage_verifications')->group(function () {
+            Route::get('/verifications', [AdminController::class, 'verifications'])->name('verifications');
+            Route::post('/verifications/{id}/approve', [AdminController::class, 'approveVerification'])->name('verifications.approve');
+            Route::post('/verifications/{id}/reject', [AdminController::class, 'rejectVerification'])->name('verifications.reject');
+        });
+
+        // User Abuse Reports & Moderation (manage_reports permission)
+        Route::middleware('permission:manage_reports')->group(function () {
+            Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+            Route::post('/reports/{id}/action', [AdminController::class, 'actionReport'])->name('reports.action');
+        });
+
+        // Audit Logs (view_audit_logs permission)
+        Route::middleware('permission:view_audit_logs')->group(function () {
+            Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('audit-logs');
+        });
+
+        // Super Admin Only: Staff Management & Permissions Control
+        Route::middleware('super_admin')->group(function () {
+            Route::get('/staff', [AdminController::class, 'staff'])->name('staff');
+            Route::post('/staff', [AdminController::class, 'storeStaff'])->name('staff.store');
+            Route::post('/staff/{id}/permissions', [AdminController::class, 'updateStaffPermissions'])->name('staff.permissions');
+            Route::post('/staff/{id}/toggle-status', [AdminController::class, 'toggleStaffStatus'])->name('staff.toggle-status');
+        });
+
+        // Platform Policies & Settings (manage_settings or Super Admin)
+        Route::middleware('permission:manage_settings')->group(function () {
+            Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+            Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
+            Route::post('/discounts', [AdminController::class, 'createDiscount'])->name('discounts.store');
+        });
     });
 });

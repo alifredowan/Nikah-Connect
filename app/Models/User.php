@@ -26,6 +26,7 @@ class User extends Authenticatable
         'email_verified_at',
         'password',
         'role',
+        'permissions',
         'gender',
         'dob',
         'marital_status',
@@ -51,6 +52,7 @@ class User extends Authenticatable
             'is_verified' => 'boolean',
             'is_active' => 'boolean',
             'two_factor_enabled' => 'boolean',
+            'permissions' => 'array',
             'password' => 'hashed',
         ];
     }
@@ -135,14 +137,30 @@ class User extends Authenticatable
     }
 
     // Role helpers
+    public function isSuperAdmin(): bool
+    {
+        return in_array($this->role, ['super_admin', 'admin'], true);
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->isSuperAdmin();
     }
 
     public function isModerator(): bool
     {
-        return in_array($this->role, ['moderator', 'admin'], true);
+        return in_array($this->role, ['moderator', 'admin', 'super_admin'], true);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $permissions = $this->permissions ?? [];
+
+        return in_array($permission, $permissions, true);
     }
 
     public function isWali(): bool
