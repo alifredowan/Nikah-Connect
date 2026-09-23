@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Interest;
+use App\Models\Photo;
 use App\Models\Profile;
 use App\Models\User;
 use App\Models\WaliLink;
@@ -133,7 +134,7 @@ class MatrimonialFeatureTest extends TestCase
             'is_active' => true,
         ]);
         $profile = Profile::create(['user_id' => $bride->id, 'wali_required' => true]);
-        $primaryPhoto = \App\Models\Photo::create([
+        $primaryPhoto = Photo::create([
             'profile_id' => $profile->id,
             'file_path' => 'https://example.com/test.jpg',
             'is_primary' => true,
