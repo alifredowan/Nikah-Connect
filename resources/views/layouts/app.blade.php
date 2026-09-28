@@ -221,7 +221,7 @@
                         x-init="fetchNotifications()"
                         @new-notification-received.window="unreadCount++; notifications.unshift($event.detail); if(notifications.length > 20) notifications.pop();">
                             <button type="button"
-                                    @click="notifOpen = !notifOpen; if(notifOpen && notifications.length === 0) fetchNotifications();"
+                                    @click="notifOpen = !notifOpen; if(notifOpen) { fetchNotifications(); if(unreadCount > 0) markAllRead(); }"
                                     id="notification-bell-btn"
                                     aria-label="Notifications"
                                     title="Real-Time Notifications"
@@ -283,32 +283,60 @@
 
                                                 <!-- Quick Actions for Interest Requests -->
                                                 <template x-if="item.data.type === 'interest_received' && item.data.interest_id">
-                                                    <div class="flex items-center gap-2 mt-2">
-                                                        <form :action="'/interests/' + item.data.interest_id + '/respond'" method="POST" class="inline">
-                                                            @csrf
-                                                            <input type="hidden" name="action" value="accept">
-                                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs transition">
-                                                                ✓ Accept
-                                                            </button>
-                                                        </form>
-                                                        <form :action="'/interests/' + item.data.interest_id + '/respond'" method="POST" class="inline">
-                                                            @csrf
-                                                            <input type="hidden" name="action" value="decline">
-                                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-[10px] transition">
-                                                                ✕ Decline
-                                                            </button>
-                                                        </form>
+                                                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                                                        <template x-if="item.data.sender_id">
+                                                            <a :href="'/profile/' + item.data.sender_id"
+                                                               @click="markAsRead(item.id, '/profile/' + item.data.sender_id)"
+                                                               class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px] border border-emerald-300 dark:border-emerald-800 transition flex items-center gap-1">
+                                                                <span>👤</span> Profile
+                                                            </a>
+                                                        </template>
+                                                        <template x-if="!item.data.interest_status || item.data.interest_status === 'pending'">
+                                                            <div class="flex items-center gap-1.5">
+                                                                <form :action="'/interests/' + item.data.interest_id + '/respond'" method="POST" class="inline">
+                                                                    @csrf
+                                                                    <input type="hidden" name="action" value="accept">
+                                                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs transition">
+                                                                        ✓ Accept
+                                                                    </button>
+                                                                </form>
+                                                                <form :action="'/interests/' + item.data.interest_id + '/respond'" method="POST" class="inline">
+                                                                    @csrf
+                                                                    <input type="hidden" name="action" value="decline">
+                                                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-[10px] transition">
+                                                                        ✕ Decline
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="item.data.interest_status === 'accepted'">
+                                                            <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md">
+                                                                ✓ Accepted
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="item.data.interest_status === 'declined'">
+                                                            <span class="text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                                                                Declined
+                                                            </span>
+                                                        </template>
                                                     </div>
                                                 </template>
 
                                                 <!-- General Action Link -->
                                                 <template x-if="item.data.action_url && item.data.type !== 'interest_received'">
-                                                    <div class="mt-1.5">
+                                                    <div class="mt-1.5 flex items-center gap-3">
                                                         <a :href="item.data.action_url"
                                                            @click="markAsRead(item.id, item.data.action_url)"
                                                            class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
                                                             <span>Open</span> &rarr;
                                                         </a>
+                                                        <template x-if="item.data.sender_id || item.data.recipient_id">
+                                                            <a :href="'/profile/' + (item.data.sender_id || item.data.recipient_id)"
+                                                               @click="markAsRead(item.id, '/profile/' + (item.data.sender_id || item.data.recipient_id))"
+                                                               class="text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                                                                <span>👤 Profile</span>
+                                                            </a>
+                                                        </template>
                                                     </div>
                                                 </template>
                                             </div>

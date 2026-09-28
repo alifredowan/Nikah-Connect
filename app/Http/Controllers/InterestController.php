@@ -129,6 +129,19 @@ class InterestController extends Controller
 
         $user = Auth::user();
         $interest = Interest::with(['sender', 'recipient'])->where('recipient_id', $user->id)->findOrFail($interestId);
+
+        // Guard: Prevent multiple responses on an already accepted or declined interest
+        if ($interest->status !== 'pending') {
+            return back()->with('info', "This interest request has already been {$interest->status}.");
+        }
+
+        // Auto-mark any unread notifications related to this interest as read
+        $user->unreadNotifications->each(function ($n) use ($interest) {
+            if (($n->data['interest_id'] ?? null) == $interest->id) {
+                $n->markAsRead();
+            }
+        });
+
         $sender = $interest->sender;
         $recipient = $user;
 

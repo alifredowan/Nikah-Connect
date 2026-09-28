@@ -81,7 +81,7 @@ class InterestReceivedNotification extends Notification implements ShouldBroadca
             'interest_id' => $this->interest->id,
             'sender_id' => $sender->id,
             'sender_name' => $sender->name,
-            'action_url' => route('interests.index'),
+            'action_url' => route('discovery.show', $sender->id),
             'icon' => '💌',
         ];
     }

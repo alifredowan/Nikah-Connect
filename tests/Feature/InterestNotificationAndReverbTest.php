@@ -310,4 +310,98 @@ class InterestNotificationAndReverbTest extends TestCase
 
         $this->assertEquals(0, $user->fresh()->unreadNotifications()->count());
     }
+
+    public function test_recipient_can_access_sender_profile_and_respond_directly_from_profile_and_notifications(): void
+    {
+        $sender = User::factory()->create([
+            'name' => 'Priya Candidate',
+            'email' => 'priya.'.Str::random(6).'@example.com',
+            'role' => 'seeker',
+            'gender' => 'female',
+            'is_verified' => true,
+            'is_active' => true,
+        ]);
+        Profile::create([
+            'user_id' => $sender->id,
+            'city' => 'Sylhet',
+            'country' => 'Bangladesh',
+            'sect_madhhab' => 'Sunni Hanafi',
+            'bio' => 'Practicing Muslimah looking for pious spouse.',
+        ]);
+
+        $recipient = User::factory()->create([
+            'name' => 'Farhan Groom',
+            'email' => 'farhan.'.Str::random(6).'@example.com',
+            'role' => 'seeker',
+            'gender' => 'male',
+            'is_verified' => true,
+            'is_active' => true,
+        ]);
+        Profile::create([
+            'user_id' => $recipient->id,
+            'city' => 'Dhaka',
+            'country' => 'Bangladesh',
+            'sect_madhhab' => 'Sunni Hanafi',
+        ]);
+
+        $interest = Interest::create([
+            'sender_id' => $sender->id,
+            'recipient_id' => $recipient->id,
+            'status' => 'pending',
+            'wali_approval_status' => 'not_required',
+            'message_note' => 'Salam, I liked your profile bio and religious commitment.',
+        ]);
+
+        // 1. Recipient receives notification
+        $notification = new InterestReceivedNotification($interest, targetUserId: $recipient->id);
+        $recipient->notify($notification);
+
+        $notifData = $recipient->unreadNotifications()->first()->data;
+        $this->assertEquals($sender->id, $notifData['sender_id']);
+        $this->assertEquals(route('discovery.show', $sender->id), $notifData['action_url']);
+
+        // 2. Recipient views /notifications page (auto marks notifications as read)
+        $notifPage = $this->actingAs($recipient)->get(route('notifications.index'));
+        $notifPage->assertOk();
+        $notifPage->assertSee('View Profile');
+        $notifPage->assertSee(route('discovery.show', $sender->id));
+        $notifPage->assertSee('Priya Candidate');
+        $this->assertEquals(0, $recipient->fresh()->unreadNotifications()->count());
+
+        // 3. Recipient opens Priya candidate profile directly
+        $profilePage = $this->actingAs($recipient)->get(route('discovery.show', $sender->id));
+        $profilePage->assertOk();
+        $profilePage->assertSee('Priya Candidate');
+        $profilePage->assertSee('has expressed Halal Interest in you!');
+        $profilePage->assertSee('Accept Interest');
+        $profilePage->assertSee('Decline');
+
+        // 4. Recipient accepts interest directly
+        $response = $this->actingAs($recipient)->post(route('interests.respond', $interest->id), [
+            'action' => 'accept',
+        ]);
+        $response->assertRedirect();
+        $this->assertDatabaseHas('interests', [
+            'id' => $interest->id,
+            'status' => 'accepted',
+        ]);
+
+        // 4b. Guard: Attempting to accept multiple times is strictly rejected
+        $duplicateResponse = $this->actingAs($recipient)->post(route('interests.respond', $interest->id), [
+            'action' => 'accept',
+        ]);
+        $duplicateResponse->assertSessionHas('info');
+
+        // 4c. Notifications page now displays "Interest Accepted" instead of duplicate accept/decline buttons
+        $notifPageAfter = $this->actingAs($recipient)->get(route('notifications.index'));
+        $notifPageAfter->assertOk();
+        $notifPageAfter->assertSee('Interest Accepted');
+        $notifPageAfter->assertDontSee('✓ Accept Interest');
+
+        // 5. Check Halal Interests dashboard view profile links
+        $interestsPage = $this->actingAs($recipient)->get(route('interests.index'));
+        $interestsPage->assertOk();
+        $interestsPage->assertSee('View Profile');
+        $interestsPage->assertSee(route('discovery.show', $sender->id));
+    }
 }

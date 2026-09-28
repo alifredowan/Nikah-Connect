@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Interest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,18 +19,27 @@ class NotificationController extends Controller
         $user = Auth::user();
 
         if ($request->wantsJson() || $request->ajax()) {
-            $notifications = $user->notifications()
+            $rawNotifications = $user->notifications()
                 ->latest()
                 ->take(15)
-                ->get()
-                ->map(function ($n) {
-                    return [
-                        'id' => $n->id,
-                        'data' => $n->data,
-                        'read_at' => $n->read_at,
-                        'created_at' => $n->created_at->diffForHumans(),
-                    ];
-                });
+                ->get();
+
+            $interestIds = $rawNotifications->pluck('data.interest_id')->filter()->unique();
+            $interests = Interest::whereIn('id', $interestIds)->get()->keyBy('id');
+
+            $notifications = $rawNotifications->map(function ($n) use ($interests) {
+                $itemData = $n->data;
+                if (! empty($itemData['interest_id']) && isset($interests[$itemData['interest_id']])) {
+                    $itemData['interest_status'] = $interests[$itemData['interest_id']]->status;
+                }
+
+                return [
+                    'id' => $n->id,
+                    'data' => $itemData,
+                    'read_at' => $n->read_at,
+                    'created_at' => $n->created_at->diffForHumans(),
+                ];
+            });
 
             return response()->json([
                 'unread_count' => $user->unreadNotifications()->count(),
@@ -37,9 +47,14 @@ class NotificationController extends Controller
             ]);
         }
 
-        $notifications = $user->notifications()->latest()->paginate(20);
+        // When user visits the notifications page, auto-mark unread notifications as read
+        $user->unreadNotifications()->update(['read_at' => now()]);
 
-        return view('notifications.index', compact('notifications'));
+        $notifications = $user->notifications()->latest()->paginate(20);
+        $interestIds = $notifications->pluck('data.interest_id')->filter()->unique();
+        $interests = Interest::whereIn('id', $interestIds)->get()->keyBy('id');
+
+        return view('notifications.index', compact('notifications', 'interests'));
     }
 
     /**

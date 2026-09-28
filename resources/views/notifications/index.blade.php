@@ -35,14 +35,28 @@
                     $isUnread = is_null($n->read_at);
                     $icon = $data['icon'] ?? '🔔';
                     $type = $data['type'] ?? 'general';
+                    $candidateUserId = $data['sender_id'] ?? $data['recipient_id'] ?? null;
+                    $candidateProfileUrl = $candidateUserId ? route('discovery.show', $candidateUserId) : null;
+                    $actionUrl = !empty($data['action_url']) ? $data['action_url'] : $candidateProfileUrl;
+                    if ($type === 'interest_received' && $candidateProfileUrl) {
+                        $actionUrl = $candidateProfileUrl;
+                    }
+                    $currentInterest = !empty($data['interest_id']) && isset($interests[$data['interest_id']]) ? $interests[$data['interest_id']] : null;
+                    $interestStatus = $currentInterest ? $currentInterest->status : null;
                 @endphp
 
                 <div class="p-4 sm:p-5 rounded-2xl border transition duration-150 {{ $isUnread ? 'bg-white dark:bg-slate-900 border-emerald-300 dark:border-emerald-800/70 shadow-sm' : 'bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800/80 opacity-90' }}">
                     <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-start gap-3.5 flex-1">
-                            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0">
-                                {{ $icon }}
-                            </div>
+                        <div class="flex items-start gap-3.5 flex-1 min-w-0">
+                            @if($candidateProfileUrl)
+                                <a href="{{ $candidateProfileUrl }}" class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xl shrink-0 hover:scale-105 hover:ring-2 hover:ring-emerald-500/40 transition shadow-2xs cursor-pointer" title="View Candidate Profile">
+                                    {{ $icon }}
+                                </a>
+                            @else
+                                <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0">
+                                    {{ $icon }}
+                                </div>
+                            @endif
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">
@@ -53,7 +67,14 @@
                                     @endif
                                 </div>
                                 <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-                                    {{ $data['message'] ?? '' }}
+                                    @if($type === 'interest_received' && !empty($data['sender_name']) && $candidateProfileUrl)
+                                        <a href="{{ $candidateProfileUrl }}" class="font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
+                                            {{ $data['sender_name'] }}
+                                        </a>
+                                        has sent you an expression of interest!
+                                    @else
+                                        {{ $data['message'] ?? '' }}
+                                    @endif
                                 </p>
 
                                 @if(!empty($data['note']))
@@ -64,27 +85,48 @@
 
                                 <!-- Action Buttons -->
                                 <div class="flex items-center gap-2.5 mt-3 flex-wrap">
-                                    @if($type === 'interest_received' && !empty($data['interest_id']))
-                                        <!-- Direct Accept & Decline Buttons -->
-                                        <form action="{{ route('interests.respond', $data['interest_id']) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="action" value="accept">
-                                            <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition">
-                                                ✓ Accept Interest
-                                            </button>
-                                        </form>
-
-                                        <form action="{{ route('interests.respond', $data['interest_id']) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="action" value="decline">
-                                            <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
-                                                ✕ Decline
-                                            </button>
-                                        </form>
+                                    @if($candidateProfileUrl)
+                                        <a href="{{ $candidateProfileUrl }}" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800 transition shadow-2xs flex items-center gap-1.5 cursor-pointer">
+                                            <span>👤</span> View Profile & Biodata
+                                        </a>
                                     @endif
 
-                                    @if(!empty($data['action_url']))
-                                        <a href="{{ $data['action_url'] }}" class="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
+                                    @if($type === 'interest_received' && !empty($data['interest_id']))
+                                        @if($interestStatus === 'accepted')
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-300 dark:border-emerald-800">
+                                                <span>✓</span> Interest Accepted
+                                            </span>
+                                            @if($currentInterest && $currentInterest->conversation)
+                                                <a href="{{ route('chat.show', $currentInterest->conversation->id) }}" class="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                                                    <span>💬 Open Messages &rarr;</span>
+                                                </a>
+                                            @endif
+                                        @elseif($interestStatus === 'declined')
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold capitalize border border-slate-200 dark:border-slate-700">
+                                                <span>✕</span> Declined
+                                            </span>
+                                        @else
+                                            <!-- Direct Accept & Decline Buttons -->
+                                            <form action="{{ route('interests.respond', $data['interest_id']) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="action" value="accept">
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition cursor-pointer">
+                                                    ✓ Accept Interest
+                                                </button>
+                                            </form>
+
+                                            <form action="{{ route('interests.respond', $data['interest_id']) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="action" value="decline">
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer">
+                                                    ✕ Decline
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endif
+
+                                    @if(!empty($actionUrl) && $actionUrl !== $candidateProfileUrl)
+                                        <a href="{{ $actionUrl }}" class="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
                                             View Details &rarr;
                                         </a>
                                     @endif
@@ -92,7 +134,7 @@
                                     @if($isUnread)
                                         <form action="{{ route('notifications.read', $n->id) }}" method="POST" class="inline ml-auto">
                                             @csrf
-                                            <button type="submit" class="text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                                            <button type="submit" class="text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">
                                                 Mark as read
                                             </button>
                                         </form>

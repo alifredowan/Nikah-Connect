@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     // Discovery & Matching
     Route::get('/discover', [DiscoveryController::class, 'index'])->name('discovery.index');
     Route::get('/profile/{id}', [DiscoveryController::class, 'show'])->name('discovery.show');
+    Route::get('/discover/{id}', [DiscoveryController::class, 'show']);
     Route::post('/saved-searches', [DiscoveryController::class, 'saveSearch'])->name('discovery.save-search');
 
     // Interests & Requests
