@@ -94,9 +94,52 @@
                             </a>
                         @endif
                         @if(Auth::user()->isAdmin() || Auth::user()->isModerator())
-                            <a href="{{ route('admin.dashboard') }}" class="px-3.5 py-2 rounded-lg text-sm font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition flex items-center gap-1">
-                                <span>⚡ Admin Panel</span>
-                            </a>
+                            <!-- Consolidated Admin Dropdown to prevent navbar overflow -->
+                            <div class="relative" x-data="{ adminMenuOpen: false }">
+                                <button type="button"
+                                        @click="adminMenuOpen = !adminMenuOpen"
+                                        @click.away="adminMenuOpen = false"
+                                        class="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/80 dark:border-rose-800/60 transition flex items-center gap-1 cursor-pointer">
+                                    <span>⚡ Admin</span>
+                                    <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': adminMenuOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+
+                                <div x-show="adminMenuOpen"
+                                     x-cloak
+                                     class="absolute left-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                                    <div class="px-3.5 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                        Admin Management
+                                    </div>
+                                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-rose-50 dark:hover:bg-slate-800 hover:text-rose-700 dark:hover:text-rose-400 transition">
+                                        <span>⚡</span> Admin Overview
+                                    </a>
+                                    @if(Auth::user()->isSuperAdmin() || Auth::user()->hasPermission('manage_settings'))
+                                        <a href="{{ route('admin.packages.index') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
+                                            <span>💳</span> Dynamic Packages
+                                        </a>
+                                        <a href="{{ route('admin.promo-codes.index') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-slate-800 transition">
+                                            <span>🏷️</span> Promo Codes
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()->isSuperAdmin())
+                                        <a href="{{ route('admin.staff') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-slate-800 transition">
+                                            <span>🛡️</span> Staff & Roles
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()->hasPermission('manage_verifications'))
+                                        <a href="{{ route('admin.verifications') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition">
+                                            <span>🪪</span> KYC Queue
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()->hasPermission('manage_reports'))
+                                        <a href="{{ route('admin.reports') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 transition">
+                                            <span>🚩</span> User Reports
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
                         @endif
                     @endauth
                     <a href="{{ route('subscription.pricing') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
@@ -128,11 +171,11 @@
                                 <div class="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 font-bold flex items-center justify-center text-sm shadow-xs">
                                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                 </div>
-                                <div class="hidden md:block text-left">
+                                <div class="hidden md:block text-left max-w-[130px]">
                                     <div class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight flex items-center gap-1">
-                                        {{ Str::limit(Auth::user()->name, 14) }}
+                                        <span class="truncate">{{ Str::limit(Auth::user()->name, 14) }}</span>
                                         @if(Auth::user()->is_verified)
-                                            <svg class="w-3.5 h-3.5 text-blue-500 fill-current inline" viewBox="0 0 20 20">
+                                            <svg class="w-3.5 h-3.5 text-blue-500 fill-current shrink-0 inline" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                             </svg>
                                         @endif
@@ -164,6 +207,21 @@
                                 <a href="{{ route('subscription.pricing') }}" class="block px-4 py-2 text-sm text-amber-700 dark:text-amber-400 font-medium hover:bg-amber-50 dark:hover:bg-slate-800">
                                     ⭐ Membership Plan ({{ ucfirst(Auth::user()->plan) }})
                                 </a>
+                                @if(Auth::user()->isSuperAdmin() || Auth::user()->hasPermission('manage_settings'))
+                                    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                    <div class="px-4 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                        Super Admin Hub
+                                    </div>
+                                    <a href="{{ route('admin.packages.index') }}" class="block px-4 py-2 text-sm text-emerald-700 dark:text-emerald-400 font-semibold hover:bg-emerald-50 dark:hover:bg-slate-800">
+                                        💳 Dynamic Package Setup
+                                    </a>
+                                    <a href="{{ route('admin.promo-codes.index') }}" class="block px-4 py-2 text-sm text-amber-700 dark:text-amber-400 font-semibold hover:bg-amber-50 dark:hover:bg-slate-800">
+                                        🏷️ Generate Promo Codes
+                                    </a>
+                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-rose-700 dark:text-rose-400 font-medium hover:bg-rose-50 dark:hover:bg-slate-800">
+                                        ⚡ Administrative Console
+                                    </a>
+                                @endif
                                 <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf

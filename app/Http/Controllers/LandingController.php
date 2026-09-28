@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Profile;
 use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -23,11 +24,18 @@ class LandingController extends Controller
             ->take(4)
             ->get();
 
-        $plans = [
-            'free' => Subscription::getPlanDetails('free'),
-            'premium' => Subscription::getPlanDetails('premium'),
-            'premium_plus' => Subscription::getPlanDetails('premium_plus'),
-        ];
+        $plans = SubscriptionPlan::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('monthly_price')
+            ->get();
+
+        if ($plans->isEmpty()) {
+            $plans = collect([
+                new SubscriptionPlan(Subscription::getPlanDetails('free')),
+                new SubscriptionPlan(Subscription::getPlanDetails('premium')),
+                new SubscriptionPlan(Subscription::getPlanDetails('premium_plus')),
+            ]);
+        }
 
         return view('landing', compact('stats', 'recentProfiles', 'plans'));
     }

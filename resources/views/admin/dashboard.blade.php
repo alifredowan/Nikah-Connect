@@ -29,6 +29,12 @@
                     </a>
                 @endif
                 @if(Auth::user()->hasPermission('manage_settings'))
+                    <a href="{{ route('admin.packages.index') }}" class="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold text-xs transition flex items-center gap-1">
+                        💳 Packages
+                    </a>
+                    <a href="{{ route('admin.promo-codes.index') }}" class="px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 font-bold text-xs transition flex items-center gap-1">
+                        🏷️ Promo Codes
+                    </a>
                     <a href="{{ route('admin.settings') }}" class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs transition">
                         ⚙️ Policy Settings
                     </a>
@@ -77,6 +83,64 @@
                 <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Total Revenue</span>
                 <span class="text-2xl font-extrabold text-slate-900 dark:text-white font-heading">${{ number_format($metrics['total_revenue'], 2) }}</span>
                 <span class="text-[10px] text-slate-500 dark:text-slate-400 block mt-1">Stripe tokenized</span>
+            </div>
+        </div>
+
+        <!-- Subscription Packages & Promo Codes Quick Access (Super Admin) -->
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white font-heading flex items-center gap-2">
+                        <span>💎 Subscription Packaging & Promo System</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Manage live subscription tiers, configure daily limits & feature flags, and create promo codes with special VIP user discounts.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('admin.packages.index') }}" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5">
+                        <span>💳</span> Setup Packages ({{ $metrics['active_packages'] ?? 0 }} Active)
+                    </a>
+                    <a href="{{ route('admin.promo-codes.index') }}" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5">
+                        <span>🏷️</span> Generate Promo Codes ({{ $metrics['active_promo_codes'] ?? 0 }} Active)
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamic Package Setup Box -->
+                <div class="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Dynamic Package Generator</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">{{ $metrics['active_packages'] ?? 0 }} Live Tiers</span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1.5">
+                            Super admin can setup custom packages with monthly/annual pricing, custom daily limits (views, interests), search boost, and custom highlight badges.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40">
+                        <a href="{{ route('admin.packages.index') }}" class="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                            Go to Package Setup Screen &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Targeted Promo Code Box -->
+                <div class="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-amber-800 dark:text-amber-300 uppercase tracking-wider">Promo Codes & VIP Discounts</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200">{{ $metrics['active_promo_codes'] ?? 0 }} Live Codes</span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1.5">
+                            Generate promo codes for specific packages (e.g. Pro package) and assign extra discounts for designated special users (by email) with instant AJAX checkout validation.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-900/40">
+                        <a href="{{ route('admin.promo-codes.index') }}" class="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1">
+                            Go to Promo Code Generator Screen &rarr;
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 

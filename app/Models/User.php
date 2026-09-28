@@ -187,11 +187,26 @@ class User extends Authenticatable
 
     public function isPremium(): bool
     {
-        return in_array($this->plan, ['premium', 'premium_plus'], true);
+        if ($this->plan === 'free') {
+            return false;
+        }
+
+        $sub = $this->activeSubscription;
+        if (! $sub || ! $sub->isActive()) {
+            return false;
+        }
+
+        return true;
     }
 
     public function isPremiumPlus(): bool
     {
-        return $this->plan === 'premium_plus';
+        if ($this->plan === 'premium_plus') {
+            return true;
+        }
+
+        $planDetails = Subscription::getPlanDetails($this->plan);
+
+        return ! empty($planDetails['profile_boost']);
     }
 }

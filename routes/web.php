@@ -65,6 +65,7 @@ Route::middleware('auth')->group(function () {
 
     // Subscription & Checkout
     Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+    Route::post('/checkout/validate-promo', [SubscriptionController::class, 'validatePromo'])->name('subscription.validate-promo');
     Route::post('/checkout/process', [SubscriptionController::class, 'process'])->name('subscription.process');
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
 
@@ -98,8 +99,22 @@ Route::middleware('auth')->group(function () {
             Route::post('/staff/{id}/toggle-status', [AdminController::class, 'toggleStaffStatus'])->name('staff.toggle-status');
         });
 
-        // Platform Policies & Settings (manage_settings or Super Admin)
+        // Platform Policies, Dynamic Packages & Promo Codes (manage_settings or Super Admin)
         Route::middleware('permission:manage_settings')->group(function () {
+            // Dynamic Subscription Packages
+            Route::get('/packages', [AdminController::class, 'packages'])->name('packages.index');
+            Route::post('/packages', [AdminController::class, 'storePackage'])->name('packages.store');
+            Route::put('/packages/{id}', [AdminController::class, 'updatePackage'])->name('packages.update');
+            Route::post('/packages/{id}/toggle-status', [AdminController::class, 'togglePackageStatus'])->name('packages.toggle-status');
+            Route::delete('/packages/{id}', [AdminController::class, 'destroyPackage'])->name('packages.destroy');
+
+            // Promo Codes & Special User Discounts
+            Route::get('/promo-codes', [AdminController::class, 'promoCodes'])->name('promo-codes.index');
+            Route::post('/promo-codes', [AdminController::class, 'storePromoCode'])->name('promo-codes.store');
+            Route::post('/promo-codes/{id}/toggle-status', [AdminController::class, 'togglePromoCodeStatus'])->name('promo-codes.toggle-status');
+            Route::delete('/promo-codes/{id}', [AdminController::class, 'destroyPromoCode'])->name('promo-codes.destroy');
+
+            // Platform Policy Parameters
             Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
             Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
             Route::post('/discounts', [AdminController::class, 'createDiscount'])->name('discounts.store');
