@@ -7,6 +7,7 @@ use App\Models\ConversationParticipant;
 use App\Models\Interest;
 use App\Models\User;
 use App\Models\WaliLink;
+use App\Notifications\InterestRespondedNotification;
 
 class WaliWorkflowService
 {
@@ -77,7 +78,39 @@ class WaliWorkflowService
 
         // If recipient also accepted, unlock conversation
         if ($interest->status === 'accepted') {
-            $this->createOrUnlockConversation($interest);
+            $conversation = $this->createOrUnlockConversation($interest);
+
+            $interest->load(['sender', 'recipient']);
+            $sender = $interest->sender;
+            $recipient = $interest->recipient;
+
+            // Notify both seekers
+            $sender->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'accepted',
+                conversation: $conversation,
+                targetUserId: $sender->id
+            ));
+
+            $recipient->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'accepted',
+                conversation: $conversation,
+                targetUserId: $recipient->id
+            ));
+
+            // Notify sender's wali if any
+            $senderWali = $sender->getActiveWaliUser();
+            if ($senderWali) {
+                $senderWali->notify(new InterestRespondedNotification(
+                    interest: $interest,
+                    action: 'accepted',
+                    isWali: true,
+                    conversation: $conversation,
+                    forSeeker: $sender,
+                    targetUserId: $senderWali->id
+                ));
+            }
         }
 
         return true;
@@ -93,6 +126,35 @@ class WaliWorkflowService
             'wali_id' => $wali->id,
             'status' => 'declined',
         ]);
+
+        $interest->load(['sender', 'recipient']);
+        $sender = $interest->sender;
+        $recipient = $interest->recipient;
+
+        // Notify sender and recipient of guardian rejection
+        $sender->notify(new InterestRespondedNotification(
+            interest: $interest,
+            action: 'declined',
+            targetUserId: $sender->id
+        ));
+
+        $recipient->notify(new InterestRespondedNotification(
+            interest: $interest,
+            action: 'declined',
+            targetUserId: $recipient->id
+        ));
+
+        // Notify sender's wali if any
+        $senderWali = $sender->getActiveWaliUser();
+        if ($senderWali) {
+            $senderWali->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'declined',
+                isWali: true,
+                forSeeker: $sender,
+                targetUserId: $senderWali->id
+            ));
+        }
 
         return true;
     }
@@ -124,15 +186,30 @@ class WaliWorkflowService
         ]);
 
         // If recipient has an active Wali, add Wali as chaperone observer
-        $waliLink = WaliLink::where('seeker_user_id', $interest->recipient_id)
+        $recipientWaliLink = WaliLink::where('seeker_user_id', $interest->recipient_id)
             ->where('status', 'active')
             ->whereNotNull('wali_user_id')
             ->first();
 
-        if ($waliLink && $waliLink->wali_user_id) {
+        if ($recipientWaliLink && $recipientWaliLink->wali_user_id) {
             ConversationParticipant::firstOrCreate([
                 'conversation_id' => $conversation->id,
-                'user_id' => $waliLink->wali_user_id,
+                'user_id' => $recipientWaliLink->wali_user_id,
+            ], [
+                'role' => 'wali_chaperone',
+            ]);
+        }
+
+        // If sender has an active Wali, add sender's Wali as chaperone observer too
+        $senderWaliLink = WaliLink::where('seeker_user_id', $interest->sender_id)
+            ->where('status', 'active')
+            ->whereNotNull('wali_user_id')
+            ->first();
+
+        if ($senderWaliLink && $senderWaliLink->wali_user_id) {
+            ConversationParticipant::firstOrCreate([
+                'conversation_id' => $conversation->id,
+                'user_id' => $senderWaliLink->wali_user_id,
             ], [
                 'role' => 'wali_chaperone',
             ]);

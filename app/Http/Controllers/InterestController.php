@@ -6,6 +6,8 @@ use App\Models\AuditLog;
 use App\Models\Conversation;
 use App\Models\Interest;
 use App\Models\User;
+use App\Notifications\InterestReceivedNotification;
+use App\Notifications\InterestRespondedNotification;
 use App\Services\QuotaService;
 use App\Services\WaliWorkflowService;
 use Illuminate\Http\RedirectResponse;
@@ -24,12 +26,12 @@ class InterestController extends Controller
     {
         $user = Auth::user();
 
-        $received = Interest::with(['sender.profile.primaryPhoto'])
+        $received = Interest::with(['sender.profile.primaryPhoto', 'conversation'])
             ->where('recipient_id', $user->id)
             ->latest()
             ->get();
 
-        $sent = Interest::with(['recipient.profile.primaryPhoto'])
+        $sent = Interest::with(['recipient.profile.primaryPhoto', 'conversation'])
             ->where('sender_id', $user->id)
             ->latest()
             ->get();
@@ -73,6 +75,37 @@ class InterestController extends Controller
 
         AuditLog::record($sender->id, 'interest_sent', 'Interest', $interest->id, ['recipient_id' => $recipient->id]);
 
+        // Dispatch notifications via Laravel Reverb
+        // 1. Notify Recipient
+        $recipient->notify(new InterestReceivedNotification(
+            interest: $interest,
+            isWali: false,
+            targetUserId: $recipient->id
+        ));
+
+        // 2. Notify Recipient's Wali if recipient has a linked guardian
+        $recipientWali = $recipient->getActiveWaliUser();
+        if ($recipientWali) {
+            $recipientWali->notify(new InterestReceivedNotification(
+                interest: $interest,
+                isWali: true,
+                forSeeker: $recipient,
+                targetUserId: $recipientWali->id
+            ));
+        }
+
+        // 3. Notify Sender's Wali if sender has a linked guardian
+        $senderWali = $sender->getActiveWaliUser();
+        if ($senderWali) {
+            $senderWali->notify(new InterestReceivedNotification(
+                interest: $interest,
+                isWali: true,
+                forSeeker: $sender,
+                isSenderWali: true,
+                targetUserId: $senderWali->id
+            ));
+        }
+
         $message = $requiresWali
             ? 'Interest request sent! Because this candidate has a guardian linked, communication will be chaperoned according to Islamic protocol (FR-4.3).'
             : 'Interest request sent successfully!';
@@ -87,7 +120,12 @@ class InterestController extends Controller
         ]);
 
         $user = Auth::user();
-        $interest = Interest::where('recipient_id', $user->id)->findOrFail($interestId);
+        $interest = Interest::with(['sender', 'recipient'])->where('recipient_id', $user->id)->findOrFail($interestId);
+        $sender = $interest->sender;
+        $recipient = $user;
+
+        $recipientWali = $recipient->getActiveWaliUser();
+        $senderWali = $sender->getActiveWaliUser();
 
         $action = $request->action;
 
@@ -101,11 +139,72 @@ class InterestController extends Controller
 
             // Check if wali approval is still pending
             if ($interest->wali_approval_status === 'pending') {
+                // Notify sender that recipient accepted and awaits Wali confirmation
+                $sender->notify(new InterestRespondedNotification(
+                    interest: $interest,
+                    action: 'accepted',
+                    targetUserId: $sender->id
+                ));
+
+                // Notify recipient's Wali
+                if ($recipientWali) {
+                    $recipientWali->notify(new InterestRespondedNotification(
+                        interest: $interest,
+                        action: 'accepted',
+                        isWali: true,
+                        forSeeker: $recipient,
+                        targetUserId: $recipientWali->id
+                    ));
+                }
+
+                // Notify sender's Wali
+                if ($senderWali) {
+                    $senderWali->notify(new InterestRespondedNotification(
+                        interest: $interest,
+                        action: 'accepted',
+                        isWali: true,
+                        forSeeker: $sender,
+                        targetUserId: $senderWali->id
+                    ));
+                }
+
                 return back()->with('info', 'You accepted the interest request! Messaging will unlock as soon as your linked guardian (Wali) confirms approval (FR-4.3).');
             }
 
             // Otherwise, unlock conversation immediately!
             $conversation = $this->waliService->createOrUnlockConversation($interest);
+
+            // Notify sender that request was accepted and conversation is unlocked
+            $sender->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'accepted',
+                conversation: $conversation,
+                targetUserId: $sender->id
+            ));
+
+            // Notify recipient's Wali
+            if ($recipientWali) {
+                $recipientWali->notify(new InterestRespondedNotification(
+                    interest: $interest,
+                    action: 'accepted',
+                    isWali: true,
+                    conversation: $conversation,
+                    forSeeker: $recipient,
+                    targetUserId: $recipientWali->id
+                ));
+            }
+
+            // Notify sender's Wali
+            if ($senderWali) {
+                $senderWali->notify(new InterestRespondedNotification(
+                    interest: $interest,
+                    action: 'accepted',
+                    isWali: true,
+                    conversation: $conversation,
+                    forSeeker: $sender,
+                    targetUserId: $senderWali->id
+                ));
+            }
 
             return redirect()->route('chat.show', $conversation->id)->with('success', 'Mutual interest confirmed! You may now begin halal conversation (FR-4.2).');
         }
@@ -116,6 +215,35 @@ class InterestController extends Controller
                 'responded_at' => now(),
             ]);
             AuditLog::record($user->id, 'interest_declined', 'Interest', $interest->id);
+
+            // Notify sender that request was declined
+            $sender->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'declined',
+                targetUserId: $sender->id
+            ));
+
+            // Notify recipient's Wali
+            if ($recipientWali) {
+                $recipientWali->notify(new InterestRespondedNotification(
+                    interest: $interest,
+                    action: 'declined',
+                    isWali: true,
+                    forSeeker: $recipient,
+                    targetUserId: $recipientWali->id
+                ));
+            }
+
+            // Notify sender's Wali
+            if ($senderWali) {
+                $senderWali->notify(new InterestRespondedNotification(
+                    interest: $interest,
+                    action: 'declined',
+                    isWali: true,
+                    forSeeker: $sender,
+                    targetUserId: $senderWali->id
+                ));
+            }
 
             return back()->with('info', 'Interest request politely declined.');
         }

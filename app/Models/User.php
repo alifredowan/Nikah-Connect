@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use Carbon\Carbon;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -85,6 +86,29 @@ class User extends Authenticatable
     public function waliLinksAsWali(): HasMany
     {
         return $this->hasMany(WaliLink::class, 'wali_user_id');
+    }
+
+    /**
+     * Get active linked Wali user if seeker is Wali-dependent.
+     */
+    public function getActiveWaliUser(): ?self
+    {
+        $link = $this->waliLinksAsSeeker()
+            ->where('status', 'active')
+            ->whereNotNull('wali_user_id')
+            ->with('wali')
+            ->first();
+
+        return $link?->wali;
+    }
+
+    /**
+     * Check if user is Wali dependent (active link or wali_required flag on profile).
+     */
+    public function isWaliDependent(): bool
+    {
+        return $this->waliLinksAsSeeker()->where('status', 'active')->exists()
+            || (bool) ($this->profile?->wali_required ?? false);
     }
 
     public function conversations(): BelongsToMany
@@ -208,5 +232,15 @@ class User extends Authenticatable
         $planDetails = Subscription::getPlanDetails($this->plan);
 
         return ! empty($planDetails['profile_boost']);
+    }
+
+    /**
+     * Send password reset notification.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

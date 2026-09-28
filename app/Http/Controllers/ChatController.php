@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSentEvent;
 use App\Models\AuditLog;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Message;
 use App\Models\Report;
+use App\Notifications\NewChatMessageNotification;
 use App\Services\MessageModerationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,16 +63,30 @@ class ChatController extends Controller
         return view('chat.show', compact('conversation', 'otherUser', 'waliObserver'));
     }
 
-    public function sendMessage(Request $request, int $conversationId): RedirectResponse
+    public function sendMessage(Request $request, int $conversationId): RedirectResponse|JsonResponse
     {
         $request->validate([
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
         $user = Auth::user();
-        $conversation = Conversation::findOrFail($conversationId);
+        $conversation = Conversation::with('participants')->findOrFail($conversationId);
+
+        // Security check: must be a participant or admin
+        $isParticipant = $conversation->participants->contains('id', $user->id);
+        if (! $isParticipant && ! $user->isAdmin() && ! $user->isModerator()) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'You are not a participant in this conversation.'], 403);
+            }
+
+            return redirect()->route('chat.index')->with('error', 'You are not a participant in this conversation.');
+        }
 
         if ($conversation->isLocked()) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'This conversation has been locked.'], 403);
+            }
+
             return back()->with('error', 'This conversation has been locked.');
         }
 
@@ -86,12 +103,56 @@ class ChatController extends Controller
 
         $conversation->touch();
 
+        // 1. Broadcast MessageSentEvent over Reverb WebSocket
+        broadcast(new MessageSentEvent($message))->toOthers();
+
+        // 2. Dispatch notifications to all other participants (seekers & chaperone walis)
+        foreach ($conversation->participants as $participant) {
+            if ($participant->id !== $user->id) {
+                $isChaperone = ($participant->pivot->role === 'wali_chaperone');
+                $participant->notify(new NewChatMessageNotification(
+                    message: $message,
+                    targetUserId: $participant->id,
+                    isWali: $isChaperone
+                ));
+            }
+        }
+
         if ($scanResult['is_flagged']) {
             AuditLog::record($user->id, 'message_flagged', 'Message', $message->id, [
                 'reason' => $scanResult['flag_reason'],
             ]);
 
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'is_flagged' => true,
+                    'flag_reason' => $scanResult['flag_reason'],
+                    'message' => [
+                        'id' => $message->id,
+                        'sender_id' => $message->sender_id,
+                        'sender_name' => $user->name,
+                        'body' => $message->body,
+                        'created_at' => $message->created_at->format('g:i A'),
+                    ],
+                ]);
+            }
+
             return back()->with('warning', 'Notice: Nikah Connect privacy filters detected potential contact information or prohibited keywords ('.$scanResult['flag_reason'].'). Sharing external contacts before platform verification is restricted (FR-4.4).');
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'is_flagged' => false,
+                'message' => [
+                    'id' => $message->id,
+                    'sender_id' => $message->sender_id,
+                    'sender_name' => $user->name,
+                    'body' => $message->body,
+                    'created_at' => $message->created_at->format('g:i A'),
+                ],
+            ]);
         }
 
         return back();
