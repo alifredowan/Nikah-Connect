@@ -20,15 +20,14 @@ class DiscoveryApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $oppositeGender = $user->gender === 'male' ? 'female' : ($user->gender === 'female' ? 'male' : null);
+        $targetGender = $user->gender === 'male' ? 'female' : ($user->gender === 'female' ? 'male' : 'female');
 
         $query = Profile::with(['user', 'primaryPhoto'])
             ->where('user_id', '!=', $user->id)
-            ->whereHas('user', function ($q) use ($oppositeGender) {
-                $q->where('is_active', true);
-                if ($oppositeGender) {
-                    $q->where('gender', $oppositeGender);
-                }
+            ->whereHas('user', function ($q) use ($targetGender) {
+                $q->where('is_active', true)
+                    ->where('role', 'seeker')
+                    ->where('gender', $targetGender);
             });
 
         if ($request->filled('country')) {

@@ -14,9 +14,18 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function show(): View
+    public function show(): View|RedirectResponse
     {
         $user = Auth::user();
+
+        if ($user->isSuperAdmin() || $user->isModerator()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($user->isWali()) {
+            return redirect()->route('wali.dashboard');
+        }
+
         $profile = $user->profile ?? Profile::create(['user_id' => $user->id]);
         $profile->load(['photos', 'photoAccessGrants.grantedToUser']);
         $profile->updateCompleteness();
@@ -24,9 +33,18 @@ class ProfileController extends Controller
         return view('profile.show', compact('user', 'profile'));
     }
 
-    public function edit(): View
+    public function edit(): View|RedirectResponse
     {
         $user = Auth::user();
+
+        if ($user->isSuperAdmin() || $user->isModerator()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($user->isWali()) {
+            return redirect()->route('wali.dashboard');
+        }
+
         $profile = $user->profile ?? Profile::create(['user_id' => $user->id]);
 
         return view('profile.edit', compact('user', 'profile'));
@@ -35,6 +53,15 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $user = Auth::user();
+
+        if ($user->isSuperAdmin() || $user->isModerator()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($user->isWali()) {
+            return redirect()->route('wali.dashboard');
+        }
+
         $profile = $user->profile ?? Profile::create(['user_id' => $user->id]);
 
         $validated = $request->validate([

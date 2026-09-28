@@ -49,6 +49,14 @@ class InterestController extends Controller
 
         $recipient = User::with('profile')->findOrFail($recipientId);
 
+        if ($recipient->role !== 'seeker' || ! $recipient->is_active) {
+            return back()->with('error', 'This user is not accepting matrimonial interest requests.');
+        }
+
+        if ($sender->gender && $recipient->gender && $sender->gender === $recipient->gender) {
+            return back()->with('error', 'Interest requests can only be sent to candidates of the opposite gender.');
+        }
+
         // Enforce daily quota (FR-5.1)
         if (! $this->quotaService->canSendInterest($sender)) {
             return redirect()->route('subscription.pricing')->with('warning', 'You have reached your daily limit of 5 interest requests. Upgrade to Premium for unlimited requests!');

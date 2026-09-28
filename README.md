@@ -1,7 +1,7 @@
 # 💍 Nikah Connect
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="320" alt="Nikah Connect Banner">
+  <img src="public/images/nikah-connect-banner.svg" width="100%" alt="Nikah Connect Banner">
 </p>
 
 <p align="center">
