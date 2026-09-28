@@ -151,4 +151,65 @@ class MatrimonialFeatureTest extends TestCase
         $contentType = $response->headers->get('Content-Type');
         $this->assertTrue(in_array($contentType, ['image/svg+xml', 'image/jpeg', 'image/png']));
     }
+
+    public function test_registration_rejects_duplicate_email_case_insensitively_and_with_spaces(): void
+    {
+        $adultDob = Carbon::now()->subYears(25)->toDateString();
+
+        User::create([
+            'name' => 'Existing User',
+            'email' => 'unique.check@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'seeker',
+            'gender' => 'male',
+            'dob' => $adultDob,
+            'marital_status' => 'never_married',
+            'is_active' => true,
+        ]);
+
+        // Attempt registering with uppercase characters and whitespace
+        $response = $this->post('/register', [
+            'name' => 'Duplicate Candidate',
+            'email' => '  UnIqUe.ChEcK@tEsT.cOm  ',
+            'gender' => 'female',
+            'dob' => $adultDob,
+            'marital_status' => 'never_married',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'terms' => '1',
+        ]);
+
+        $response->assertSessionHasErrors(['email']);
+        $this->assertSame(
+            'An account with this email address already exists. Please sign in or use forgot password.',
+            session('errors')->first('email')
+        );
+
+        // Ensure database only contains 1 user for this email
+        $this->assertSame(1, User::whereRaw('LOWER(email) = ?', ['unique.check@test.com'])->count());
+    }
+
+    public function test_login_works_case_insensitively_and_with_spaces(): void
+    {
+        $adultDob = Carbon::now()->subYears(25)->toDateString();
+
+        $user = User::create([
+            'name' => 'Case Sensitive User',
+            'email' => 'case.login@test.com',
+            'password' => bcrypt('SecretPassword123!'),
+            'role' => 'seeker',
+            'gender' => 'male',
+            'dob' => $adultDob,
+            'marital_status' => 'never_married',
+            'is_active' => true,
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => '  CaSe.LoGiN@TeSt.CoM  ',
+            'password' => 'SecretPassword123!',
+        ]);
+
+        $response->assertRedirect(route('discovery.index'));
+        $this->assertAuthenticatedAs($user);
+    }
 }

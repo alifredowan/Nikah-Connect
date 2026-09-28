@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Notifications\ResetPasswordNotification;
 use Carbon\Carbon;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -56,6 +57,17 @@ class User extends Authenticatable
             'permissions' => 'array',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Always lowercase and trim email to prevent duplicate accounts.
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value !== null ? strtolower(trim($value)) : null,
+            set: fn (?string $value) => $value !== null ? strtolower(trim($value)) : null,
+        );
     }
 
     public function profile(): HasOne

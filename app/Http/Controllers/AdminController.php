@@ -421,14 +421,27 @@ class AdminController extends Controller
 
     public function storeStaff(Request $request): RedirectResponse
     {
+        $normalizedEmail = strtolower(trim((string) $request->input('email')));
+        $request->merge(['email' => $normalizedEmail]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->where(function ($query) use ($normalizedEmail) {
+                    return $query->whereRaw('LOWER(email) = ?', [$normalizedEmail]);
+                }),
+            ],
             'phone' => ['nullable', 'string', 'max:20'],
             'role' => ['required', 'in:super_admin,moderator'],
             'password' => ['required', 'string', 'min:8'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'in:manage_verifications,manage_reports,view_audit_logs,manage_settings'],
+        ], [
+            'email.unique' => 'A user or staff member with this email address already exists.',
         ]);
 
         $permissions = $validated['role'] === 'super_admin'

@@ -117,4 +117,35 @@ class PasswordResetTest extends TestCase
         $response->assertSessionHasErrors(['email']);
         $this->assertTrue(Hash::check('OldPassword123!', $user->fresh()->password));
     }
+
+    public function test_reset_password_link_works_with_case_insensitive_and_whitespace_email(): void
+    {
+        Notification::fake();
+
+        $user = $this->createUser('case.reset.user@example.com');
+
+        $response = $this->post(route('password.email'), [
+            'email' => '  CaSe.ReSeT.UsEr@ExAmPlE.cOm  ',
+        ]);
+
+        $response->assertSessionHas('status');
+        Notification::assertSentTo($user, ResetPasswordNotification::class);
+    }
+
+    public function test_password_can_be_reset_with_case_insensitive_email(): void
+    {
+        $user = $this->createUser('case.update.user@example.com');
+        $token = Password::createToken($user);
+
+        $response = $this->post(route('password.update'), [
+            'token' => $token,
+            'email' => '  CaSe.UpDaTe.UsEr@ExAmPlE.cOm  ',
+            'password' => 'NewSecurePassword123!',
+            'password_confirmation' => 'NewSecurePassword123!',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('success');
+        $this->assertTrue(Hash::check('NewSecurePassword123!', $user->fresh()->password));
+    }
 }

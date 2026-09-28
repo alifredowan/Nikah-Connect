@@ -25,14 +25,18 @@
                 </div>
             @endif
 
-            <!-- Developer Local Testing Quick Link -->
+            <!-- Developer Local Testing Quick Link when in log mode -->
             @if (session('dev_reset_url'))
                 <div class="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800/80 text-xs text-amber-900 dark:text-amber-200">
                     <strong class="font-bold flex items-center gap-1 mb-1">
                         <span>⚡ Local Dev Shortcut:</span>
                     </strong>
                     <p class="text-[11px] text-slate-600 dark:text-slate-300 mb-2 leading-relaxed">
-                        Because emails are logged in development mode, you can test directly:
+                        @if(config('mail.default') === 'log')
+                            Your app is currently running in <strong>MAIL_MAILER=log</strong> mode (emails are written to <code class="px-1 py-0.5 bg-amber-100 dark:bg-amber-900/50 rounded font-mono text-[10px]">storage/logs/laravel.log</code>). You can test the reset link directly below, or configure SMTP in <code class="px-1 py-0.5 bg-amber-100 dark:bg-amber-900/50 rounded font-mono text-[10px]">.env</code> to deliver to your real inbox:
+                        @else
+                            You can also use this direct test shortcut:
+                        @endif
                     </p>
                     <a href="{{ session('dev_reset_url') }}" class="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
                         <span>Proceed to Reset Password</span> &rarr;

@@ -12,8 +12,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -32,13 +34,29 @@ class AuthController extends Controller
         if (! in_array($role, ['seeker', 'wali'], true)) {
             $role = 'seeker';
         }
-        $request->merge(['role' => $role]);
+
+        $normalizedEmail = strtolower(trim((string) $request->input('email')));
+        $normalizedPhone = $request->filled('phone') ? trim((string) $request->input('phone')) : null;
+
+        $request->merge([
+            'role' => $role,
+            'email' => $normalizedEmail,
+            'phone' => $normalizedPhone,
+        ]);
 
         $rules = [
             'role' => ['required', 'in:seeker,wali'],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['nullable', 'string', 'max:20', 'unique:users'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->where(function ($query) use ($normalizedEmail) {
+                    return $query->whereRaw('LOWER(email) = ?', [$normalizedEmail]);
+                }),
+            ],
+            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone'],
             'gender' => ['required', 'in:male,female'],
             'dob' => ['required', 'date', "before_or_equal:{$maxBirthDate}"],
             'password' => ['required', 'confirmed', Password::defaults()],
@@ -53,6 +71,7 @@ class AuthController extends Controller
         }
 
         $validated = $request->validate($rules, [
+            'email.unique' => 'An account with this email address already exists. Please sign in or use forgot password.',
             'dob.before_or_equal' => 'You must be at least 18 years old to register for Nikah Connect.',
         ]);
 
@@ -107,10 +126,14 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        $normalizedEmail = strtolower(trim((string) $request->input('email')));
+        $request->merge(['email' => $normalizedEmail]);
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
+        $credentials['email'] = $normalizedEmail;
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
@@ -170,7 +193,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('landing')->with('success', 'Your account has been deactivated as per GDPR right to erasure policy.');
+        return redirect()->route('landing')->with('success', 'Your account has been deactivated.');
     }
 
     public function showForgotPassword(): View
@@ -180,13 +203,27 @@ class AuthController extends Controller
 
     public function sendResetLinkEmail(Request $request): RedirectResponse
     {
+        $normalizedEmail = strtolower(trim((string) $request->input('email')));
+        $request->merge(['email' => $normalizedEmail]);
+
         $request->validate([
             'email' => ['required', 'email'],
         ]);
 
-        $status = PasswordBroker::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            $status = PasswordBroker::sendResetLink(
+                $request->only('email')
+            );
+        } catch (\Throwable $e) {
+            Log::error('Password reset email sending failed: '.$e->getMessage(), [
+                'email' => $normalizedEmail,
+                'exception' => $e,
+            ]);
+
+            return back()->withInput($request->only('email'))->withErrors([
+                'email' => 'Unable to send password reset email due to a mail delivery error. Please check your mail settings or contact support.',
+            ]);
+        }
 
         if ($status === PasswordBroker::RESET_LINK_SENT) {
             return back()->with('status', __($status));
@@ -205,6 +242,9 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request): RedirectResponse
     {
+        $normalizedEmail = strtolower(trim((string) $request->input('email')));
+        $request->merge(['email' => $normalizedEmail]);
+
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
