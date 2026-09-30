@@ -17,7 +17,11 @@ class MatchingEngineService
         $u1 = $p1->user;
         $u2 = $p2->user;
 
-        // Opposites genders only for matrimonial
+        // Non-seekers (e.g. super_admin, moderator, wali) cannot be matched
+        if (($u1->role && $u1->role !== 'seeker') || ($u2->role && $u2->role !== 'seeker')) {
+            return 0;
+        }
+
         if ($u1->gender && $u2->gender && $u1->gender === $u2->gender) {
             return 0;
         }
@@ -140,15 +144,17 @@ class MatchingEngineService
             return collect();
         }
 
-        $oppositeGender = $user->gender === 'male' ? 'female' : ($user->gender === 'female' ? 'male' : null);
+        $targetGender = $user->gender === 'male' ? 'female' : ($user->gender === 'female' ? 'male' : null);
+        if (! $targetGender) {
+            return collect();
+        }
 
         $query = Profile::with(['user', 'primaryPhoto', 'photos'])
             ->where('user_id', '!=', $user->id)
-            ->whereHas('user', function ($q) use ($oppositeGender) {
-                $q->where('is_active', true);
-                if ($oppositeGender) {
-                    $q->where('gender', $oppositeGender);
-                }
+            ->whereHas('user', function ($q) use ($targetGender) {
+                $q->where('is_active', true)
+                    ->where('role', 'seeker')
+                    ->where('gender', $targetGender);
             });
 
         $candidates = $query->get();

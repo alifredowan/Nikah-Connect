@@ -7,6 +7,7 @@ use App\Models\ConversationParticipant;
 use App\Models\Interest;
 use App\Models\User;
 use App\Models\WaliLink;
+use App\Notifications\InterestRespondedNotification;
 
 class WaliWorkflowService
 {
@@ -27,7 +28,7 @@ class WaliWorkflowService
             $waliUser = User::where('email', $waliEmail)->first();
         }
 
-        return WaliLink::create([
+        $link = WaliLink::create([
             'seeker_user_id' => $seeker->id,
             'wali_user_id' => $waliUser?->id,
             'wali_name' => $waliName,
@@ -38,6 +39,12 @@ class WaliWorkflowService
             'status' => $waliUser ? 'active' : 'pending',
             'invite_token' => bin2hex(random_bytes(16)),
         ]);
+
+        if ($waliUser) {
+            $this->syncWaliToConversations($seeker, $waliUser);
+        }
+
+        return $link;
     }
 
     /**
@@ -77,7 +84,39 @@ class WaliWorkflowService
 
         // If recipient also accepted, unlock conversation
         if ($interest->status === 'accepted') {
-            $this->createOrUnlockConversation($interest);
+            $conversation = $this->createOrUnlockConversation($interest);
+
+            $interest->load(['sender', 'recipient']);
+            $sender = $interest->sender;
+            $recipient = $interest->recipient;
+
+            // Notify both seekers
+            $sender->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'accepted',
+                conversation: $conversation,
+                targetUserId: $sender->id
+            ));
+
+            $recipient->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'accepted',
+                conversation: $conversation,
+                targetUserId: $recipient->id
+            ));
+
+            // Notify sender's wali if any
+            $senderWali = $sender->getActiveWaliUser();
+            if ($senderWali) {
+                $senderWali->notify(new InterestRespondedNotification(
+                    interest: $interest,
+                    action: 'accepted',
+                    isWali: true,
+                    conversation: $conversation,
+                    forSeeker: $sender,
+                    targetUserId: $senderWali->id
+                ));
+            }
         }
 
         return true;
@@ -93,6 +132,35 @@ class WaliWorkflowService
             'wali_id' => $wali->id,
             'status' => 'declined',
         ]);
+
+        $interest->load(['sender', 'recipient']);
+        $sender = $interest->sender;
+        $recipient = $interest->recipient;
+
+        // Notify sender and recipient of guardian rejection
+        $sender->notify(new InterestRespondedNotification(
+            interest: $interest,
+            action: 'declined',
+            targetUserId: $sender->id
+        ));
+
+        $recipient->notify(new InterestRespondedNotification(
+            interest: $interest,
+            action: 'declined',
+            targetUserId: $recipient->id
+        ));
+
+        // Notify sender's wali if any
+        $senderWali = $sender->getActiveWaliUser();
+        if ($senderWali) {
+            $senderWali->notify(new InterestRespondedNotification(
+                interest: $interest,
+                action: 'declined',
+                isWali: true,
+                forSeeker: $sender,
+                targetUserId: $senderWali->id
+            ));
+        }
 
         return true;
     }
@@ -124,20 +192,100 @@ class WaliWorkflowService
         ]);
 
         // If recipient has an active Wali, add Wali as chaperone observer
-        $waliLink = WaliLink::where('seeker_user_id', $interest->recipient_id)
+        $recipientWaliLink = WaliLink::where('seeker_user_id', $interest->recipient_id)
             ->where('status', 'active')
             ->whereNotNull('wali_user_id')
             ->first();
 
-        if ($waliLink && $waliLink->wali_user_id) {
+        if ($recipientWaliLink && $recipientWaliLink->wali_user_id) {
             ConversationParticipant::firstOrCreate([
                 'conversation_id' => $conversation->id,
-                'user_id' => $waliLink->wali_user_id,
+                'user_id' => $recipientWaliLink->wali_user_id,
+            ], [
+                'role' => 'wali_chaperone',
+            ]);
+        }
+
+        // If sender has an active Wali, add sender's Wali as chaperone observer too
+        $senderWaliLink = WaliLink::where('seeker_user_id', $interest->sender_id)
+            ->where('status', 'active')
+            ->whereNotNull('wali_user_id')
+            ->first();
+
+        if ($senderWaliLink && $senderWaliLink->wali_user_id) {
+            ConversationParticipant::firstOrCreate([
+                'conversation_id' => $conversation->id,
+                'user_id' => $senderWaliLink->wali_user_id,
             ], [
                 'role' => 'wali_chaperone',
             ]);
         }
 
         return $conversation;
+    }
+
+    /**
+     * Synchronize a Wali to all existing conversations of their ward.
+     */
+    public function syncWaliToConversations(User $seeker, User $wali): void
+    {
+        $conversations = Conversation::whereHas('participants', function ($q) use ($seeker) {
+            $q->where('conversation_participants.user_id', $seeker->id);
+        })->get();
+
+        foreach ($conversations as $conversation) {
+            ConversationParticipant::firstOrCreate([
+                'conversation_id' => $conversation->id,
+                'user_id' => $wali->id,
+            ], [
+                'role' => 'wali_chaperone',
+            ]);
+        }
+    }
+
+    /**
+     * Ensure any active Walis of the seekers are attached as participants to the conversation.
+     */
+    public function ensureWaliParticipants(Conversation $conversation): void
+    {
+        $conversation->loadMissing('participants');
+        $seekerIds = $conversation->participants
+            ->filter(fn ($p) => $p->pivot->role !== 'wali_chaperone')
+            ->pluck('id');
+
+        $activeWaliLinks = WaliLink::whereIn('seeker_user_id', $seekerIds)
+            ->where('status', 'active')
+            ->whereNotNull('wali_user_id')
+            ->get();
+
+        foreach ($activeWaliLinks as $link) {
+            ConversationParticipant::firstOrCreate([
+                'conversation_id' => $conversation->id,
+                'user_id' => $link->wali_user_id,
+            ], [
+                'role' => 'wali_chaperone',
+            ]);
+        }
+    }
+
+    /**
+     * Auto link existing or newly registered/logged in user to pending Wali links by email.
+     */
+    public function autoLinkWaliUser(User $user): void
+    {
+        $pendingLinks = WaliLink::where('wali_email', strtolower($user->email))
+            ->whereNull('wali_user_id')
+            ->get();
+
+        foreach ($pendingLinks as $link) {
+            $link->update([
+                'wali_user_id' => $user->id,
+                'status' => 'active',
+            ]);
+
+            if ($link->seeker) {
+                $this->syncWaliToConversations($link->seeker, $user);
+            }
+        }
     }
 }

@@ -151,4 +151,181 @@ class MatrimonialFeatureTest extends TestCase
         $contentType = $response->headers->get('Content-Type');
         $this->assertTrue(in_array($contentType, ['image/svg+xml', 'image/jpeg', 'image/png']));
     }
+
+    public function test_registration_rejects_duplicate_email_case_insensitively_and_with_spaces(): void
+    {
+        $adultDob = Carbon::now()->subYears(25)->toDateString();
+
+        User::create([
+            'name' => 'Existing User',
+            'email' => 'unique.check@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'seeker',
+            'gender' => 'male',
+            'dob' => $adultDob,
+            'marital_status' => 'never_married',
+            'is_active' => true,
+        ]);
+
+        // Attempt registering with uppercase characters and whitespace
+        $response = $this->post('/register', [
+            'name' => 'Duplicate Candidate',
+            'email' => '  UnIqUe.ChEcK@tEsT.cOm  ',
+            'gender' => 'female',
+            'dob' => $adultDob,
+            'marital_status' => 'never_married',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'terms' => '1',
+        ]);
+
+        $response->assertSessionHasErrors(['email']);
+        $this->assertSame(
+            'An account with this email address already exists. Please sign in or use forgot password.',
+            session('errors')->first('email')
+        );
+
+        // Ensure database only contains 1 user for this email
+        $this->assertSame(1, User::whereRaw('LOWER(email) = ?', ['unique.check@test.com'])->count());
+    }
+
+    public function test_login_works_case_insensitively_and_with_spaces(): void
+    {
+        $adultDob = Carbon::now()->subYears(25)->toDateString();
+
+        $user = User::create([
+            'name' => 'Case Sensitive User',
+            'email' => 'case.login@test.com',
+            'password' => bcrypt('SecretPassword123!'),
+            'role' => 'seeker',
+            'gender' => 'male',
+            'dob' => $adultDob,
+            'marital_status' => 'never_married',
+            'is_active' => true,
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => '  CaSe.LoGiN@TeSt.CoM  ',
+            'password' => 'SecretPassword123!',
+        ]);
+
+        $response->assertRedirect(route('discovery.index'));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_discovery_strictly_shows_opposite_gender_and_excludes_staff_and_wali(): void
+    {
+        $dob = Carbon::now()->subYears(25)->toDateString();
+
+        // 1. Male seeker (current logged-in user)
+        $maleSeeker = User::create([
+            'name' => 'Groom Seeker',
+            'email' => 'groom.discover@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'seeker',
+            'gender' => 'male',
+            'dob' => $dob,
+            'marital_status' => 'never_married',
+            'is_active' => true,
+        ]);
+        Profile::create(['user_id' => $maleSeeker->id, 'sect_madhhab' => 'Sunni Hanafi']);
+
+        // 2. Female seeker (should appear for male seeker)
+        $femaleSeeker = User::create([
+            'name' => 'Bride Candidate',
+            'email' => 'bride.discover@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'seeker',
+            'gender' => 'female',
+            'dob' => $dob,
+            'marital_status' => 'never_married',
+            'is_active' => true,
+        ]);
+        Profile::create(['user_id' => $femaleSeeker->id, 'sect_madhhab' => 'Sunni Hanafi']);
+
+        // 3. Another Male seeker (must NOT appear for male seeker)
+        $otherMaleSeeker = User::create([
+            'name' => 'Other Male Seeker',
+            'email' => 'other.male@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'seeker',
+            'gender' => 'male',
+            'dob' => $dob,
+            'marital_status' => 'never_married',
+            'is_active' => true,
+        ]);
+        Profile::create(['user_id' => $otherMaleSeeker->id, 'sect_madhhab' => 'Sunni Hanafi']);
+
+        // 4. Super Admin (must NEVER appear)
+        $superAdmin = User::create([
+            'name' => 'Admin Boss',
+            'email' => 'admin.boss@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'super_admin',
+            'gender' => 'female',
+            'dob' => $dob,
+            'is_active' => true,
+        ]);
+        Profile::create(['user_id' => $superAdmin->id]);
+
+        // 5. Moderator (must NEVER appear)
+        $moderator = User::create([
+            'name' => 'Mod Staff',
+            'email' => 'mod.staff@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'moderator',
+            'gender' => 'female',
+            'dob' => $dob,
+            'is_active' => true,
+        ]);
+        Profile::create(['user_id' => $moderator->id]);
+
+        // 6. Wali Guardian (must NEVER appear)
+        $wali = User::create([
+            'name' => 'Wali Guardian',
+            'email' => 'wali.guardian@test.com',
+            'password' => bcrypt('Password123!'),
+            'role' => 'wali',
+            'gender' => 'female',
+            'dob' => $dob,
+            'is_active' => true,
+        ]);
+        Profile::create(['user_id' => $wali->id]);
+
+        // Act: Male seeker visits /discover
+        $response = $this->actingAs($maleSeeker)->get(route('discovery.index'));
+
+        $response->assertOk();
+        $discoveredMaleView = $response->viewData('profiles')->pluck('user.name');
+        $this->assertTrue($discoveredMaleView->contains('Bride Candidate'));
+        $this->assertFalse($discoveredMaleView->contains('Other Male Seeker'));
+        $this->assertFalse($discoveredMaleView->contains('Groom Seeker'));
+        $this->assertFalse($discoveredMaleView->contains('Admin Boss'));
+        $this->assertFalse($discoveredMaleView->contains('Mod Staff'));
+        $this->assertFalse($discoveredMaleView->contains('Wali Guardian'));
+
+        // Act: Female seeker visits /discover -> only male seekers must appear
+        $femaleResponse = $this->actingAs($femaleSeeker)->get(route('discovery.index'));
+        $femaleResponse->assertOk();
+        $discoveredFemaleView = $femaleResponse->viewData('profiles')->pluck('user.name');
+        $this->assertTrue($discoveredFemaleView->contains('Groom Seeker'));
+        $this->assertTrue($discoveredFemaleView->contains('Other Male Seeker'));
+        $this->assertFalse($discoveredFemaleView->contains('Bride Candidate'));
+        $this->assertFalse($discoveredFemaleView->contains('Admin Boss'));
+        $this->assertFalse($discoveredFemaleView->contains('Mod Staff'));
+        $this->assertFalse($discoveredFemaleView->contains('Wali Guardian'));
+
+        // Act: Seeker cannot view or send interest to admin or same-gender candidate
+        $showAdminResponse = $this->actingAs($maleSeeker)->get(route('discovery.show', $superAdmin->id));
+        $showAdminResponse->assertRedirect(route('discovery.index'));
+
+        $showSameGenderResponse = $this->actingAs($maleSeeker)->get(route('discovery.show', $otherMaleSeeker->id));
+        $showSameGenderResponse->assertRedirect(route('discovery.index'));
+
+        $interestToAdminResponse = $this->actingAs($maleSeeker)->post(route('interests.send', $superAdmin->id));
+        $interestToAdminResponse->assertSessionHas('error');
+
+        $interestToSameGenderResponse = $this->actingAs($maleSeeker)->post(route('interests.send', $otherMaleSeeker->id));
+        $interestToSameGenderResponse->assertSessionHas('error');
+    }
 }

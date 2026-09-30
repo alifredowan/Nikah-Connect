@@ -43,11 +43,24 @@
                 </form>
             </div>
 
-            <!-- Promotional Codes Section -->
+            <!-- Quick Links & Promo Codes Section -->
             <div class="space-y-6">
+                <!-- Direct Management Cards -->
+                <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-3xl p-6 shadow-sm space-y-3">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-200">Admin Control</span>
+                    <h3 class="text-lg font-bold font-heading">Dynamic Packages & Tiers</h3>
+                    <p class="text-xs text-emerald-100 leading-relaxed">Customize package pricing, quotas, features, and active status dynamically.</p>
+                    <a href="{{ route('admin.packages.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-emerald-800 rounded-xl font-bold text-xs hover:bg-emerald-50 transition shadow-xs">
+                        💳 Manage Packages &rarr;
+                    </a>
+                </div>
+
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
-                    <h2 class="text-base font-bold text-slate-900 dark:text-white font-heading">Generate Promo Code</h2>
-                    <form action="{{ route('admin.discounts.store') }}" method="POST" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white font-heading">Quick Promo Generator</h2>
+                        <a href="{{ route('admin.promo-codes.index') }}" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline">Full Manager &rarr;</a>
+                    </div>
+                    <form action="{{ route('admin.promo-codes.store') }}" method="POST" class="space-y-3">
                         @csrf
                         <div>
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Coupon Code</label>
@@ -71,12 +84,20 @@
                 </div>
 
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
-                    <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">Active Promo Codes</h3>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Active Promo Codes</h3>
+                        <a href="{{ route('admin.promo-codes.index') }}" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline">View All &rarr;</a>
+                    </div>
                     <div class="space-y-2">
                         @foreach($discountCodes as $code)
                             <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs flex items-center justify-between">
-                                <span class="font-mono font-bold text-emerald-800 dark:text-emerald-400">{{ $code->code }}</span>
-                                <span class="text-slate-600 dark:text-slate-300 font-semibold">{{ $code->discount_percentage }}% off ({{ $code->times_used }}/{{ $code->max_uses }} used)</span>
+                                <div>
+                                    <span class="font-mono font-bold text-emerald-800 dark:text-emerald-400">{{ $code->code }}</span>
+                                    @if($code->isRestrictedToUsers())
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold ml-1">Special</span>
+                                    @endif
+                                </div>
+                                <span class="text-slate-600 dark:text-slate-300 font-semibold">{{ $code->discount_percentage }}% off ({{ $code->times_used }}/{{ $code->max_uses }})</span>
                             </div>
                         @endforeach
                     </div>

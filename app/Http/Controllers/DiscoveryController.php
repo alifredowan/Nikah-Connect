@@ -26,15 +26,23 @@ class DiscoveryController extends Controller
         $currentUser = Auth::user();
         $userProfile = $currentUser->profile;
 
-        $oppositeGender = $currentUser->gender === 'male' ? 'female' : ($currentUser->gender === 'female' ? 'male' : null);
+        // Determine strict target opposite gender
+        // Male logged in -> ONLY female seeker profiles
+        // Female logged in -> ONLY male seeker profiles
+        if ($currentUser->gender === 'male') {
+            $targetGender = 'female';
+        } elseif ($currentUser->gender === 'female') {
+            $targetGender = 'male';
+        } else {
+            $targetGender = $request->input('gender', 'female');
+        }
 
         $query = Profile::with(['user', 'primaryPhoto', 'photos'])
             ->where('user_id', '!=', $currentUser->id)
-            ->whereHas('user', function ($q) use ($oppositeGender) {
-                $q->where('is_active', true);
-                if ($oppositeGender) {
-                    $q->where('gender', $oppositeGender);
-                }
+            ->whereHas('user', function ($q) use ($targetGender) {
+                $q->where('is_active', true)
+                    ->where('role', 'seeker')
+                    ->where('gender', $targetGender);
             });
 
         // Advanced filter gating check:
@@ -105,8 +113,12 @@ class DiscoveryController extends Controller
         $targetUser = User::with(['profile.photos', 'profile.primaryPhoto'])->findOrFail($userId);
         $profile = $targetUser->profile;
 
-        if (! $profile) {
-            return redirect()->route('discovery.index')->with('error', 'Profile not found.');
+        if (! $profile || ! $targetUser->is_active || $targetUser->role !== 'seeker' || $targetUser->id === $currentUser->id) {
+            return redirect()->route('discovery.index')->with('error', 'Profile not found or not available for matrimonial matching.');
+        }
+
+        if ($currentUser->role === 'seeker' && $currentUser->gender && $targetUser->gender && $currentUser->gender === $targetUser->gender) {
+            return redirect()->route('discovery.index')->with('error', 'You can only view candidate profiles of the opposite gender.');
         }
 
         // Enforce daily profile view limit (FR-3.4)
@@ -131,7 +143,10 @@ class DiscoveryController extends Controller
             $q->where('sender_id', $targetUser->id)->where('recipient_id', $currentUser->id);
         })->first();
 
-        return view('discovery.show', compact('targetUser', 'profile', 'compatibilityScore', 'isPhotoVisible', 'existingInterest'));
+        // Check active linked Wali
+        $activeWaliLink = $targetUser->waliLinksAsSeeker()->where('status', 'active')->first();
+
+        return view('discovery.show', compact('targetUser', 'profile', 'compatibilityScore', 'isPhotoVisible', 'existingInterest', 'activeWaliLink'));
     }
 
     public function saveSearch(Request $request): RedirectResponse

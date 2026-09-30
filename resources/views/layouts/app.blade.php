@@ -94,9 +94,52 @@
                             </a>
                         @endif
                         @if(Auth::user()->isAdmin() || Auth::user()->isModerator())
-                            <a href="{{ route('admin.dashboard') }}" class="px-3.5 py-2 rounded-lg text-sm font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition flex items-center gap-1">
-                                <span>⚡ Admin Panel</span>
-                            </a>
+                            <!-- Consolidated Admin Dropdown to prevent navbar overflow -->
+                            <div class="relative" x-data="{ adminMenuOpen: false }">
+                                <button type="button"
+                                        @click="adminMenuOpen = !adminMenuOpen"
+                                        @click.away="adminMenuOpen = false"
+                                        class="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/80 dark:border-rose-800/60 transition flex items-center gap-1 cursor-pointer">
+                                    <span>⚡ Admin</span>
+                                    <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': adminMenuOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+
+                                <div x-show="adminMenuOpen"
+                                     x-cloak
+                                     class="absolute left-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                                    <div class="px-3.5 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                        Admin Management
+                                    </div>
+                                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-rose-50 dark:hover:bg-slate-800 hover:text-rose-700 dark:hover:text-rose-400 transition">
+                                        <span>⚡</span> Admin Overview
+                                    </a>
+                                    @if(Auth::user()->isSuperAdmin() || Auth::user()->hasPermission('manage_settings'))
+                                        <a href="{{ route('admin.packages.index') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
+                                            <span>💳</span> Dynamic Packages
+                                        </a>
+                                        <a href="{{ route('admin.promo-codes.index') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-slate-800 transition">
+                                            <span>🏷️</span> Promo Codes
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()->isSuperAdmin())
+                                        <a href="{{ route('admin.staff') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-slate-800 transition">
+                                            <span>🛡️</span> Staff & Roles
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()->hasPermission('manage_verifications'))
+                                        <a href="{{ route('admin.verifications') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition">
+                                            <span>🪪</span> KYC Queue
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()->hasPermission('manage_reports'))
+                                        <a href="{{ route('admin.reports') }}" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 transition">
+                                            <span>🚩</span> User Reports
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
                         @endif
                     @endauth
                     <a href="{{ route('subscription.pricing') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
@@ -123,16 +166,212 @@
                     </button>
 
                     @auth
+                        <!-- Real-time Reverb Notification Bell -->
+                        <div class="relative" x-data="{
+                            notifOpen: false,
+                            unreadCount: {{ Auth::user()->unreadNotifications->count() }},
+                            notifications: [],
+                            loading: false,
+                            fetchNotifications() {
+                                this.loading = true;
+                                fetch('{{ route('notifications.index') }}', {
+                                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.notifications = data.notifications;
+                                    this.unreadCount = data.unread_count;
+                                    this.loading = false;
+                                })
+                                .catch(() => { this.loading = false; });
+                            },
+                            markAsRead(id, url) {
+                                fetch('/notifications/' + id + '/read', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.unreadCount = data.unread_count;
+                                    const n = this.notifications.find(item => item.id === id);
+                                    if (n) n.read_at = new Date().toISOString();
+                                    if (url) window.location.href = url;
+                                });
+                            },
+                            markAllRead() {
+                                fetch('{{ route('notifications.read-all') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.unreadCount = 0;
+                                    this.notifications.forEach(n => n.read_at = new Date().toISOString());
+                                });
+                            }
+                        }"
+                        x-init="fetchNotifications()"
+                        @new-notification-received.window="unreadCount++; notifications.unshift($event.detail); if(notifications.length > 20) notifications.pop();">
+                            <button type="button"
+                                    @click="notifOpen = !notifOpen; if(notifOpen) { fetchNotifications(); if(unreadCount > 0) markAllRead(); }"
+                                    id="notification-bell-btn"
+                                    aria-label="Notifications"
+                                    title="Real-Time Notifications"
+                                    class="relative p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                                <span x-show="unreadCount > 0"
+                                      x-text="unreadCount > 99 ? '99+' : unreadCount"
+                                      x-cloak
+                                      class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-amber-500 text-white font-extrabold text-[10px] rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
+                                </span>
+                            </button>
+
+                            <!-- Notification Dropdown Menu -->
+                            <div x-show="notifOpen"
+                                 @click.away="notifOpen = false"
+                                 x-cloak
+                                 class="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2">
+                                
+                                <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-xs font-bold font-heading text-slate-900 dark:text-white uppercase tracking-wider">
+                                            Notifications
+                                        </h3>
+                                        <span x-show="unreadCount > 0" x-text="unreadCount + ' new'" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"></span>
+                                    </div>
+                                    <button type="button"
+                                            x-show="unreadCount > 0"
+                                            @click="markAllRead()"
+                                            class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                                        Mark all read
+                                    </button>
+                                </div>
+
+                                <!-- Notification Items List -->
+                                <div class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    <div x-show="loading" class="p-6 text-center text-xs text-slate-400">
+                                        Loading notifications...
+                                    </div>
+
+                                    <template x-for="item in notifications" :key="item.id">
+                                        <div class="p-3 sm:p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition flex items-start gap-3"
+                                             :class="{ 'bg-emerald-50/40 dark:bg-emerald-950/20': !item.read_at }">
+                                            <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-base shrink-0"
+                                                 x-text="item.data.icon || '🔔'">
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center justify-between gap-1">
+                                                    <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate" x-text="item.data.title || 'Notification'"></h4>
+                                                    <span class="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap" x-text="item.created_at"></span>
+                                                </div>
+                                                <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug line-clamp-2" x-text="item.data.message"></p>
+
+                                                <!-- Note quote if present -->
+                                                <template x-if="item.data.note">
+                                                    <div class="mt-1 text-[10px] bg-slate-100 dark:bg-slate-800 p-1.5 rounded-lg text-slate-700 dark:text-slate-300 italic truncate" x-text="'&ldquo;' + item.data.note + '&rdquo;'"></div>
+                                                </template>
+
+                                                <!-- Quick Actions for Interest Requests -->
+                                                <template x-if="item.data.type === 'interest_received' && item.data.interest_id">
+                                                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                                                        <template x-if="item.data.sender_id">
+                                                            <a :href="'/profile/' + item.data.sender_id"
+                                                               @click="markAsRead(item.id, '/profile/' + item.data.sender_id)"
+                                                               class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px] border border-emerald-300 dark:border-emerald-800 transition flex items-center gap-1">
+                                                                <span>👤</span> Profile
+                                                            </a>
+                                                        </template>
+                                                        <template x-if="!item.data.interest_status || item.data.interest_status === 'pending'">
+                                                            <div class="flex items-center gap-1.5">
+                                                                <form :action="'/interests/' + item.data.interest_id + '/respond'" method="POST" class="inline">
+                                                                    @csrf
+                                                                    <input type="hidden" name="action" value="accept">
+                                                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs transition">
+                                                                        ✓ Accept
+                                                                    </button>
+                                                                </form>
+                                                                <form :action="'/interests/' + item.data.interest_id + '/respond'" method="POST" class="inline">
+                                                                    @csrf
+                                                                    <input type="hidden" name="action" value="decline">
+                                                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-[10px] transition">
+                                                                        ✕ Decline
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="item.data.interest_status === 'accepted'">
+                                                            <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md">
+                                                                ✓ Accepted
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="item.data.interest_status === 'declined'">
+                                                            <span class="text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                                                                Declined
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+
+                                                <!-- General Action Link -->
+                                                <template x-if="item.data.action_url && item.data.type !== 'interest_received'">
+                                                    <div class="mt-1.5 flex items-center gap-3">
+                                                        <a :href="item.data.action_url"
+                                                           @click="markAsRead(item.id, item.data.action_url)"
+                                                           class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                                                            <span>Open</span> &rarr;
+                                                        </a>
+                                                        <template x-if="item.data.sender_id || item.data.recipient_id">
+                                                            <a :href="'/profile/' + (item.data.sender_id || item.data.recipient_id)"
+                                                               @click="markAsRead(item.id, '/profile/' + (item.data.sender_id || item.data.recipient_id))"
+                                                               class="text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                                                                <span>👤 Profile</span>
+                                                            </a>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <button type="button"
+                                                    x-show="!item.read_at"
+                                                    @click="markAsRead(item.id)"
+                                                    title="Mark read"
+                                                    class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1 hover:scale-125 transition">
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <div x-show="!loading && notifications.length === 0" class="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                                        No notifications yet
+                                    </div>
+                                </div>
+
+                                <div class="px-4 py-2 border-t border-slate-100 dark:border-slate-800 text-center">
+                                    <a href="{{ route('notifications.index') }}" class="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
+                                        View all notifications &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="flex items-center gap-2.5 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none">
                                 <div class="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 font-bold flex items-center justify-center text-sm shadow-xs">
                                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                 </div>
-                                <div class="hidden md:block text-left">
+                                <div class="hidden md:block text-left max-w-[130px]">
                                     <div class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight flex items-center gap-1">
-                                        {{ Str::limit(Auth::user()->name, 14) }}
+                                        <span class="truncate">{{ Str::limit(Auth::user()->name, 14) }}</span>
                                         @if(Auth::user()->is_verified)
-                                            <svg class="w-3.5 h-3.5 text-blue-500 fill-current inline" viewBox="0 0 20 20">
+                                            <svg class="w-3.5 h-3.5 text-blue-500 fill-current shrink-0 inline" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                             </svg>
                                         @endif
@@ -164,6 +403,21 @@
                                 <a href="{{ route('subscription.pricing') }}" class="block px-4 py-2 text-sm text-amber-700 dark:text-amber-400 font-medium hover:bg-amber-50 dark:hover:bg-slate-800">
                                     ⭐ Membership Plan ({{ ucfirst(Auth::user()->plan) }})
                                 </a>
+                                @if(Auth::user()->isSuperAdmin() || Auth::user()->hasPermission('manage_settings'))
+                                    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                    <div class="px-4 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                        Super Admin Hub
+                                    </div>
+                                    <a href="{{ route('admin.packages.index') }}" class="block px-4 py-2 text-sm text-emerald-700 dark:text-emerald-400 font-semibold hover:bg-emerald-50 dark:hover:bg-slate-800">
+                                        💳 Dynamic Package Setup
+                                    </a>
+                                    <a href="{{ route('admin.promo-codes.index') }}" class="block px-4 py-2 text-sm text-amber-700 dark:text-amber-400 font-semibold hover:bg-amber-50 dark:hover:bg-slate-800">
+                                        🏷️ Generate Promo Codes
+                                    </a>
+                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-rose-700 dark:text-rose-400 font-medium hover:bg-rose-50 dark:hover:bg-slate-800">
+                                        ⚡ Administrative Console
+                                    </a>
+                                @endif
                                 <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
@@ -283,6 +537,9 @@
         </div>
     </footer>
 
+    <!-- Reverb Real-Time Toast Container -->
+    <div id="reverb-toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
     <script>
         (function() {
             const themeToggleBtn = document.getElementById('theme-toggle');
@@ -310,6 +567,120 @@
                 });
             }
         })();
+
+        // Play gentle Halal notification audio chime via Web Audio API
+        function playHalalNotificationSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const now = ctx.currentTime;
+                
+                // Primary gentle bell chime
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+                
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch (e) {
+                // Audio autoplay might be restricted by user interaction policy
+            }
+        }
+
+        // Show floating toast alert for real-time Reverb notification
+        function showHalalNotificationToast(data) {
+            const container = document.getElementById('reverb-toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto p-4 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-700 shadow-2xl flex items-start gap-3 transition-all duration-300 transform translate-y-3 opacity-0';
+            
+            const icon = data.icon || '🔔';
+            const title = data.title || 'New Notification';
+            const message = data.message || '';
+            const actionUrl = data.action_url || '';
+
+            toast.innerHTML = `
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0">
+                    ${icon}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <h4 class="font-bold text-xs text-slate-900 dark:text-white truncate">${title}</h4>
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug line-clamp-2">${message}</p>
+                    ${actionUrl ? `<a href="${actionUrl}" class="inline-block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline mt-1.5">View details &rarr;</a>` : ''}
+                </div>
+                <button type="button" aria-label="Close" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold p-1 leading-none">&times;</button>
+            `;
+
+            const closeBtn = toast.querySelector('button');
+            closeBtn.onclick = () => {
+                toast.classList.add('opacity-0', 'translate-y-3');
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-3');
+            });
+
+            // Auto dismiss after 8 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.add('opacity-0', 'translate-y-3');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 8000);
+        }
+
+        // Initialize Laravel Reverb Echo Listener for logged-in user
+        document.addEventListener('DOMContentLoaded', function() {
+            @auth
+                if (window.Echo) {
+                    const userId = {{ Auth::id() }};
+
+                    const processedNotificationIds = new Set();
+
+                    function handleReverbNotification(notification) {
+                        const notifId = notification.id || (notification.data && notification.data.id);
+                        if (notifId && processedNotificationIds.has(notifId)) {
+                            return;
+                        }
+                        if (notifId) {
+                            processedNotificationIds.add(notifId);
+                        }
+
+                        playHalalNotificationSound();
+                        showHalalNotificationToast(notification);
+
+                        // Broadcast to Alpine.js Notification Bell
+                        window.dispatchEvent(new CustomEvent('new-notification-received', {
+                            detail: {
+                                id: notifId || 'notif-' + Date.now(),
+                                data: notification,
+                                read_at: null,
+                                created_at: 'Just now'
+                            }
+                        }));
+                    }
+
+                    // Standard Laravel notification channel: App.Models.User.{id}
+                    window.Echo.private('App.Models.User.' + userId)
+                        .notification(handleReverbNotification);
+                }
+            @endauth
+        });
     </script>
 </body>
 </html>

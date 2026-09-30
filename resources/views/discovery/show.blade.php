@@ -61,9 +61,9 @@
                                 <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300">
                                     🕌 {{ str_replace('_', ' ', $profile->prayer_frequency ?? 'Practicing') }}
                                 </span>
-                                @if($profile->wali_required)
+                                @if($profile->wali_required || ($activeWaliLink ?? null))
                                     <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 flex items-center gap-1">
-                                        🛡️ Guardian (Wali) Chaperoned
+                                        🛡️ Guardian (Wali): {{ ($activeWaliLink ?? null) ? ($activeWaliLink->wali_name . ' (' . ucfirst(str_replace('_', ' ', $activeWaliLink->relationship_type)) . ')') : 'Chaperone Required' }}
                                     </span>
                                 @endif
                             </div>
@@ -73,20 +73,43 @@
                     <!-- Interest Action Button -->
                     <div class="w-full sm:w-auto">
                         @if($existingInterest)
-                            <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center {{ $existingInterest->status === 'accepted' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' }}">
-                                @if($existingInterest->status === 'accepted')
+                            @if($existingInterest->status === 'accepted')
+                                <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                                     ✓ Interest Accepted
                                     @if($existingInterest->conversation)
                                         <a href="{{ route('chat.show', $existingInterest->conversation->id) }}" class="underline ml-2 text-emerald-900 dark:text-emerald-200">Open Messages &rarr;</a>
                                     @endif
-                                @elseif($existingInterest->status === 'pending')
-                                    ⏳ Interest Request Pending
+                                </div>
+                            @elseif($existingInterest->status === 'pending')
+                                @if($existingInterest->recipient_id === Auth::id())
+                                    <div class="flex items-center gap-2">
+                                        <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <input type="hidden" name="action" value="accept">
+                                            <button type="submit" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/15 transition flex items-center gap-1.5 cursor-pointer">
+                                                <span>✓</span> Accept Interest
+                                            </button>
+                                        </form>
+                                        <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <input type="hidden" name="action" value="decline">
+                                            <button type="submit" class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer">
+                                                <span>✕</span> Decline
+                                            </button>
+                                        </form>
+                                    </div>
                                 @else
-                                    Status: {{ ucfirst($existingInterest->status) }}
+                                    <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                                        <span>⏳</span> Interest Request Sent (Pending Response)
+                                    </div>
                                 @endif
-                            </div>
+                            @else
+                                <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 capitalize border border-slate-200 dark:border-slate-700">
+                                    Status: {{ ucfirst($existingInterest->status) }}
+                                </div>
+                            @endif
                         @else
-                            <button type="button" onclick="document.getElementById('sendInterestModal').classList.remove('hidden')" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/15 transition flex items-center justify-center gap-2">
+                            <button type="button" onclick="document.getElementById('sendInterestModal').classList.remove('hidden')" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/15 transition flex items-center justify-center gap-2 cursor-pointer">
                                 <span>💌</span> Express Halal Interest
                             </button>
                         @endif
@@ -107,6 +130,50 @@
                 @endif
             </div>
         </div>
+
+        <!-- Incoming Pending Interest Callout Banner -->
+        @if($existingInterest && $existingInterest->status === 'pending' && $existingInterest->recipient_id === Auth::id())
+            <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/60 dark:via-teal-950/40 dark:to-emerald-950/60 border-2 border-emerald-500/30 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl shrink-0 shadow-md">
+                        💌
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                            Pending Interest Request Received
+                        </span>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                            {{ $targetUser->name }} has expressed Halal Interest in you!
+                        </h2>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-xl leading-relaxed">
+                            Carefully review their biodata, religious practice (Deen), education, and lifestyle below. You can accept or decline this matrimonial introduction request right here.
+                        </p>
+                        @if($existingInterest->message_note)
+                            <div class="mt-3 text-xs bg-white/80 dark:bg-slate-900/80 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/80 text-slate-700 dark:text-slate-300 italic">
+                                &ldquo;{{ $existingInterest->message_note }}&rdquo;
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5 w-full md:w-auto shrink-0 justify-end">
+                    <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline flex-1 md:flex-initial">
+                        @csrf
+                        <input type="hidden" name="action" value="accept">
+                        <button type="submit" class="w-full md:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/20 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>✓</span> Accept Interest
+                        </button>
+                    </form>
+                    <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline flex-1 md:flex-initial">
+                        @csrf
+                        <input type="hidden" name="action" value="decline">
+                        <button type="submit" class="w-full md:w-auto px-4 py-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer">
+                            <span>✕</span> Decline
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
 
         <!-- Main Details Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -207,12 +274,20 @@
                         </div>
                         <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                             <span class="text-slate-500 dark:text-slate-400">Siblings:</span>
-                            <span class="font-bold text-slate-900 dark:text-white">{{ $profile->siblings_count }}</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ $profile->siblings_count ?? 'Not specified' }}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                             <span class="text-slate-500 dark:text-slate-400">Parents' Occupation:</span>
                             <span class="font-bold text-slate-900 dark:text-white">{{ $profile->parents_occupation ?? 'Respected background' }}</span>
                         </div>
+                        @if($activeWaliLink ?? null)
+                            <div class="flex justify-between border-t border-purple-100 dark:border-purple-900/60 pt-2 bg-purple-50/50 dark:bg-purple-950/30 -mx-2 px-2 rounded-lg">
+                                <span class="text-purple-700 dark:text-purple-300 font-medium">Assigned Wali:</span>
+                                <span class="font-bold text-purple-950 dark:text-purple-200">
+                                    🛡️ {{ $activeWaliLink->wali_name }} ({{ ucfirst(str_replace('_', ' ', $activeWaliLink->relationship_type)) }})
+                                </span>
+                            </div>
+                        @endif
                     </div>
                 </div>
 

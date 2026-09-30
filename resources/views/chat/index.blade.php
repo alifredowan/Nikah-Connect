@@ -19,8 +19,10 @@
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
             @forelse($conversations as $conversation)
                 @php
+                    $isChaperoneUser = $conversation->participants->where('id', Auth::id())->first()?->pivot?->role === 'wali_chaperone';
                     $other = $conversation->getOtherParticipant(Auth::user());
                     $hasWali = $conversation->participants->contains(fn($p) => $p->pivot->role === 'wali_chaperone');
+                    $seekers = $conversation->participants->where('pivot.role', 'seeker');
                 @endphp
                 <a href="{{ route('chat.show', $conversation->id) }}" class="p-5 flex items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition block">
                     <div class="flex items-center gap-4">
@@ -35,11 +37,18 @@
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ $other?->name ?? 'Candidate' }}</h3>
-                                @if($hasWali)
+                                @if($isChaperoneUser)
+                                    <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ $seekers->pluck('name')->join(' & ') }}</h3>
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-                                        🛡️ Wali Chaperoned
+                                        🛡️ Observing as Guardian
                                     </span>
+                                @else
+                                    <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ $other?->name ?? 'Candidate' }}</h3>
+                                    @if($hasWali)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                                            🛡️ Wali Chaperoned
+                                        </span>
+                                    @endif
                                 @endif
                             </div>
                             <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">

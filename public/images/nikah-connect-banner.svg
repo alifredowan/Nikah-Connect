@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" width="100%" height="260">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#022c22" />
+      <stop offset="50%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#021c16" />
+    </linearGradient>
+
+    <!-- Radial Glow Behind Icon -->
+    <radialGradient id="centerGlow" cx="24%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#047857" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#022c22" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Gold Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="40%" stop-color="#fbbf24" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+
+    <!-- Soft White/Mint Text Gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#ecfdf5" />
+    </linearGradient>
+
+    <!-- Badge Background Gradient -->
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#047857" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#065f46" stop-opacity="0.6" />
+    </linearGradient>
+
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-weight: 800; font-size: 42px; fill: url(#textGrad); letter-spacing: 1.5px; }
+    .gold-word { fill: url(#goldGrad); }
+    .subtitle { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 600; font-size: 14px; fill: #6ee7b7; letter-spacing: 3px; text-transform: uppercase; }
+    .badge-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; font-size: 13px; fill: #d1fae5; }
+    .arabic { font-family: 'Amiri', 'Traditional Arabic', serif; font-size: 22px; fill: url(#goldGrad); opacity: 0.85; }
+  </style>
+
+  <!-- Background Base with Rounded Corners -->
+  <rect width="900" height="260" rx="16" fill="url(#bgGrad)" />
+  <rect width="900" height="260" rx="16" fill="url(#centerGlow)" />
+  
+  <!-- Subtle Border Frame -->
+  <rect x="1" y="1" width="898" height="258" rx="15" fill="none" stroke="#059669" stroke-width="1.5" stroke-opacity="0.4" />
+  <rect x="5" y="5" width="890" height="250" rx="12" fill="none" stroke="url(#goldGrad)" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="8 6" />
+
+  <!-- Background Islamic Arabesque Geometric Motifs (Left & Right) -->
+  <g opacity="0.08" stroke="#fbbf24" stroke-width="1.2" fill="none">
+    <circle cx="820" cy="130" r="90" />
+    <circle cx="820" cy="130" r="60" />
+    <rect x="750" y="60" width="140" height="140" transform="rotate(45 820 130)" />
+    <rect x="750" y="60" width="140" height="140" />
+    
+    <circle cx="80" cy="130" r="70" />
+    <rect x="30" y="80" width="100" height="100" transform="rotate(45 80 130)" />
+  </g>
+
+  <!-- Left Logo Group -->
+  <g transform="translate(90, 45)">
+    <!-- Outer Shield / Halo -->
+    <circle cx="85" cy="85" r="72" fill="#047857" fill-opacity="0.2" stroke="url(#goldGrad)" stroke-width="2" />
+    <circle cx="85" cy="85" r="64" fill="none" stroke="#34d399" stroke-width="1" stroke-dasharray="4 4" opacity="0.5" />
+
+    <!-- 8-Pointed Star (Rub el Hizb) Background -->
+    <g transform="translate(85, 85)" fill="url(#goldGrad)" opacity="0.18">
+      <rect x="-35" y="-35" width="70" height="70" rx="4" />
+      <rect x="-35" y="-35" width="70" height="70" rx="4" transform="rotate(45)" />
+    </g>
+
+    <!-- Interlocking Golden Wedding Rings (Halal Nikah Symbol) -->
+    <!-- Left Ring -->
+    <ellipse cx="73" cy="88" rx="28" ry="28" fill="none" stroke="url(#goldGrad)" stroke-width="5" filter="url(#goldGlow)" />
+    <!-- Right Ring (Interlocked) -->
+    <ellipse cx="97" cy="88" rx="28" ry="28" fill="none" stroke="url(#goldGrad)" stroke-width="5" filter="url(#goldGlow)" />
+
+    <!-- Crescent Moon & Islamic Star (Centered Above Rings) -->
+    <path d="M 85 46 A 16 16 0 0 0 76 68 A 14 14 0 0 1 83 48 Z" fill="url(#goldGrad)" />
+    <!-- 5-Pointed Mini Star -->
+    <path d="M 88 53 L 89 56 L 92 56 L 90 58 L 91 61 L 88 59 L 85 61 L 86 58 L 84 56 L 87 56 Z" fill="url(#goldGrad)" />
+
+    <!-- Gem Diamond Accent on Ring -->
+    <polygon points="73,56 78,61 73,66 68,61" fill="#ecfdf5" stroke="url(#goldGrad)" stroke-width="1" />
+  </g>
+
+  <!-- Central / Right Branding Content -->
+  <g transform="translate(295, 62)">
+    <!-- Arabic Calligraphy Inscription -->
+    <text x="0" y="24" class="arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</text>
+
+    <!-- Platform Title -->
+    <text x="0" y="74" class="title">
+      NIKAH <tspan class="gold-word">CONNECT</tspan>
+    </text>
+
+    <!-- Subtitle -->
+    <text x="2" y="104" class="subtitle">
+      Islamic Matrimonial Platform
+    </text>
+
+    <!-- Tagline Feature Badges -->
+    <g transform="translate(0, 126)">
+      <!-- Badge 1: Modesty (Haya) -->
+      <rect x="0" y="0" width="138" height="28" rx="14" fill="url(#badgeGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.4" />
+      <text x="69" y="18" text-anchor="middle" class="badge-text">🔒 Modesty &amp; Haya</text>
+
+      <!-- Badge 2: Wali Oversight -->
+      <rect x="148" y="0" width="144" height="28" rx="14" fill="url(#badgeGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.4" />
+      <text x="220" y="18" text-anchor="middle" class="badge-text">🛡️ Wali Involvement</text>
+
+      <!-- Badge 3: Deen Centric -->
+      <rect x="302" y="0" width="158" height="28" rx="14" fill="url(#badgeGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.4" />
+      <text x="381" y="18" text-anchor="middle" class="badge-text">⭐ Deen Compatibility</text>
+
+      <!-- Badge 4: Live Chat -->
+      <rect x="470" y="0" width="100" height="28" rx="14" fill="url(#badgeGrad)" stroke="url(#goldGrad)" stroke-width="1" stroke-opacity="0.6" />
+      <text x="520" y="18" text-anchor="middle" class="badge-text" fill="#fef08a">⚡ Reverb Live</text>
+    </g>
+  </g>
+</svg>

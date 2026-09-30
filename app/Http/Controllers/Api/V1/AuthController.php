@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -18,14 +19,30 @@ class AuthController extends Controller
     {
         $maxBirthDate = Carbon::now()->subYears(18)->toDateString();
 
+        $normalizedEmail = strtolower(trim((string) $request->input('email')));
+        $normalizedPhone = $request->filled('phone') ? trim((string) $request->input('phone')) : null;
+
+        $request->merge([
+            'email' => $normalizedEmail,
+            'phone' => $normalizedPhone,
+        ]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users'],
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->where(function ($query) use ($normalizedEmail) {
+                    return $query->whereRaw('LOWER(email) = ?', [$normalizedEmail]);
+                }),
+            ],
             'phone' => ['nullable', 'string', 'unique:users'],
             'gender' => ['required', 'in:male,female'],
             'dob' => ['required', 'date', "before_or_equal:{$maxBirthDate}"],
             'marital_status' => ['required', 'in:never_married,divorced,widowed,annulled'],
             'password' => ['required', Password::defaults()],
+        ], [
+            'email.unique' => 'An account with this email address already exists. Please sign in or use forgot password.',
         ]);
 
         $user = User::create([
@@ -65,12 +82,15 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
+        $normalizedEmail = strtolower(trim((string) $request->input('email')));
+        $request->merge(['email' => $normalizedEmail]);
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json([

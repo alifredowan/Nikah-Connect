@@ -14,7 +14,18 @@ class QuotaService
      */
     public function canViewProfile(User $viewer, int $viewedUserId): bool
     {
-        if ($viewer->id === $viewedUserId || $viewer->isAdmin() || $viewer->isModerator()) {
+        if ($viewer->id === $viewedUserId || $viewer->isAdmin() || $viewer->isModerator() || $viewer->isWali()) {
+            return true;
+        }
+
+        // Always allow viewing candidate profile when there is an active/pending interest request
+        $hasInterest = Interest::where(function ($q) use ($viewer, $viewedUserId) {
+            $q->where('sender_id', $viewedUserId)->where('recipient_id', $viewer->id);
+        })->orWhere(function ($q) use ($viewer, $viewedUserId) {
+            $q->where('sender_id', $viewer->id)->where('recipient_id', $viewedUserId);
+        })->exists();
+
+        if ($hasInterest) {
             return true;
         }
 

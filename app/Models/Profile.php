@@ -131,9 +131,9 @@ class Profile extends Model
 
         // Linked Wali has access to ward's photos
         if ($viewer->isWali()) {
-            $isWardsPhoto = WaliLink::where('wali_id', $viewer->id)
-                ->where('seeker_id', $this->user_id)
-                ->where('status', 'accepted')
+            $isWardsPhoto = WaliLink::where('wali_user_id', $viewer->id)
+                ->where('seeker_user_id', $this->user_id)
+                ->where('status', 'active')
                 ->exists();
 
             if ($isWardsPhoto) {

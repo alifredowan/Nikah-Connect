@@ -27,25 +27,30 @@
             @forelse($received as $interest)
                 <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 shrink-0">
+                        <a href="{{ route('discovery.show', $interest->sender_id) }}" class="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 shrink-0 hover:ring-2 hover:ring-emerald-500 transition block group cursor-pointer" title="View Candidate Profile">
                             @if($interest->sender->profile?->primaryPhoto)
-                                <img src="{{ $interest->sender->profile->primaryPhoto->displayUrl() }}" alt="{{ $interest->sender->name }}" class="w-full h-full object-cover photo-blur">
+                                <img src="{{ $interest->sender->profile->primaryPhoto->displayUrl() }}" alt="{{ $interest->sender->name }}" class="w-full h-full object-cover photo-blur group-hover:scale-105 transition">
                             @else
-                                <div class="w-full h-full flex items-center justify-center bg-emerald-950 text-white font-bold text-xl">
+                                <div class="w-full h-full flex items-center justify-center bg-emerald-950 text-white font-bold text-xl group-hover:bg-emerald-900 transition">
                                     {{ substr($interest->sender->name, 0, 1) }}
                                 </div>
                             @endif
-                        </div>
+                        </a>
                         <div>
-                            <div class="flex items-center gap-1.5">
-                                <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ $interest->sender->name }}</h3>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <a href="{{ route('discovery.show', $interest->sender_id) }}" class="font-bold text-sm text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
+                                    {{ $interest->sender->name }}
+                                </a>
                                 @if($interest->sender->is_verified)
                                     <span class="bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">✓ Verified</span>
                                 @endif
+                                <a href="{{ route('discovery.show', $interest->sender_id) }}" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline ml-1">
+                                    View Profile ↗
+                                </a>
                             </div>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
-                                {{ $interest->sender->age }} yrs • {{ $interest->sender->profile?->city }}, {{ $interest->sender->profile?->country }} •
-                                <span class="text-emerald-700 dark:text-emerald-400 font-medium">{{ $interest->sender->profile?->sect_madhhab }}</span>
+                                {{ $interest->sender->age }} yrs • {{ $interest->sender->profile?->city ?? 'Location not specified' }}, {{ $interest->sender->profile?->country ?? '' }} •
+                                <span class="text-emerald-700 dark:text-emerald-400 font-medium">{{ $interest->sender->profile?->sect_madhhab ?? 'Practicing' }}</span>
                             </p>
                             @if($interest->message_note)
                                 <p class="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg mt-2 italic">
@@ -55,19 +60,22 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                        <a href="{{ route('discovery.show', $interest->sender_id) }}" class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                            <span>👤</span> View Profile
+                        </a>
                         @if($interest->status === 'pending')
                             <form action="{{ route('interests.respond', $interest->id) }}" method="POST" class="inline">
                                 @csrf
                                 <input type="hidden" name="action" value="accept">
-                                <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition">
+                                <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition cursor-pointer">
                                     Accept Interest
                                 </button>
                             </form>
                             <form action="{{ route('interests.respond', $interest->id) }}" method="POST" class="inline">
                                 @csrf
                                 <input type="hidden" name="action" value="decline">
-                                <button type="submit" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition">
+                                <button type="submit" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer">
                                     Decline
                                 </button>
                             </form>
@@ -102,25 +110,35 @@
             @forelse($sent as $interest)
                 <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 shrink-0">
+                        <a href="{{ route('discovery.show', $interest->recipient_id) }}" class="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 shrink-0 hover:ring-2 hover:ring-emerald-500 transition block group cursor-pointer" title="View Candidate Profile">
                             @if($interest->recipient->profile?->primaryPhoto)
-                                <img src="{{ $interest->recipient->profile->primaryPhoto->displayUrl() }}" alt="{{ $interest->recipient->name }}" class="w-full h-full object-cover photo-blur">
+                                <img src="{{ $interest->recipient->profile->primaryPhoto->displayUrl() }}" alt="{{ $interest->recipient->name }}" class="w-full h-full object-cover photo-blur group-hover:scale-105 transition">
                             @else
-                                <div class="w-full h-full flex items-center justify-center bg-emerald-950 text-white font-bold text-xl">
+                                <div class="w-full h-full flex items-center justify-center bg-emerald-950 text-white font-bold text-xl group-hover:bg-emerald-900 transition">
                                     {{ substr($interest->recipient->name, 0, 1) }}
                                 </div>
                             @endif
-                        </div>
+                        </a>
                         <div>
-                            <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ $interest->recipient->name }}</h3>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <a href="{{ route('discovery.show', $interest->recipient_id) }}" class="font-bold text-sm text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
+                                    {{ $interest->recipient->name }}
+                                </a>
+                                <a href="{{ route('discovery.show', $interest->recipient_id) }}" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline ml-1">
+                                    View Profile ↗
+                                </a>
+                            </div>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
-                                {{ $interest->recipient->age }} yrs • {{ $interest->recipient->profile?->city }}, {{ $interest->recipient->profile?->country }}
+                                {{ $interest->recipient->age }} yrs • {{ $interest->recipient->profile?->city ?? 'Location not specified' }}, {{ $interest->recipient->profile?->country ?? '' }}
                             </p>
                             <span class="text-[11px] text-slate-400 dark:text-slate-500 block mt-1">Sent on {{ $interest->created_at->format('M d, Y') }}</span>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <a href="{{ route('discovery.show', $interest->recipient_id) }}" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition flex items-center gap-1 shadow-2xs cursor-pointer">
+                            <span>👤</span> View Profile
+                        </a>
                         @if($interest->status === 'accepted')
                             @if($interest->wali_approval_status === 'pending')
                                 <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300">

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use Carbon\Carbon;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -57,6 +59,17 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Always lowercase and trim email to prevent duplicate accounts.
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value !== null ? strtolower(trim($value)) : null,
+            set: fn (?string $value) => $value !== null ? strtolower(trim($value)) : null,
+        );
+    }
+
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
@@ -85,6 +98,29 @@ class User extends Authenticatable
     public function waliLinksAsWali(): HasMany
     {
         return $this->hasMany(WaliLink::class, 'wali_user_id');
+    }
+
+    /**
+     * Get active linked Wali user if seeker is Wali-dependent.
+     */
+    public function getActiveWaliUser(): ?self
+    {
+        $link = $this->waliLinksAsSeeker()
+            ->where('status', 'active')
+            ->whereNotNull('wali_user_id')
+            ->with('wali')
+            ->first();
+
+        return $link?->wali;
+    }
+
+    /**
+     * Check if user is Wali dependent (active link or wali_required flag on profile).
+     */
+    public function isWaliDependent(): bool
+    {
+        return $this->waliLinksAsSeeker()->where('status', 'active')->exists()
+            || (bool) ($this->profile?->wali_required ?? false);
     }
 
     public function conversations(): BelongsToMany
@@ -187,11 +223,36 @@ class User extends Authenticatable
 
     public function isPremium(): bool
     {
-        return in_array($this->plan, ['premium', 'premium_plus'], true);
+        if ($this->plan === 'free') {
+            return false;
+        }
+
+        $sub = $this->activeSubscription;
+        if (! $sub || ! $sub->isActive()) {
+            return false;
+        }
+
+        return true;
     }
 
     public function isPremiumPlus(): bool
     {
-        return $this->plan === 'premium_plus';
+        if ($this->plan === 'premium_plus') {
+            return true;
+        }
+
+        $planDetails = Subscription::getPlanDetails($this->plan);
+
+        return ! empty($planDetails['profile_boost']);
+    }
+
+    /**
+     * Send password reset notification.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

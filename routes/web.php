@@ -6,6 +6,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\InterestController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
@@ -23,6 +24,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+
+    // Password Reset
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
 // Authenticated routes
@@ -43,12 +50,18 @@ Route::middleware('auth')->group(function () {
     // Discovery & Matching
     Route::get('/discover', [DiscoveryController::class, 'index'])->name('discovery.index');
     Route::get('/profile/{id}', [DiscoveryController::class, 'show'])->name('discovery.show');
+    Route::get('/discover/{id}', [DiscoveryController::class, 'show']);
     Route::post('/saved-searches', [DiscoveryController::class, 'saveSearch'])->name('discovery.save-search');
 
     // Interests & Requests
     Route::get('/interests', [InterestController::class, 'index'])->name('interests.index');
     Route::post('/interests/{userId}', [InterestController::class, 'send'])->name('interests.send');
     Route::post('/interests/{id}/respond', [InterestController::class, 'respond'])->name('interests.respond');
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     // Wali (Guardian) workflow
     Route::get('/wali/link', [WaliController::class, 'linkForm'])->name('wali.link');
@@ -65,6 +78,7 @@ Route::middleware('auth')->group(function () {
 
     // Subscription & Checkout
     Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+    Route::post('/checkout/validate-promo', [SubscriptionController::class, 'validatePromo'])->name('subscription.validate-promo');
     Route::post('/checkout/process', [SubscriptionController::class, 'process'])->name('subscription.process');
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
 
@@ -98,8 +112,22 @@ Route::middleware('auth')->group(function () {
             Route::post('/staff/{id}/toggle-status', [AdminController::class, 'toggleStaffStatus'])->name('staff.toggle-status');
         });
 
-        // Platform Policies & Settings (manage_settings or Super Admin)
+        // Platform Policies, Dynamic Packages & Promo Codes (manage_settings or Super Admin)
         Route::middleware('permission:manage_settings')->group(function () {
+            // Dynamic Subscription Packages
+            Route::get('/packages', [AdminController::class, 'packages'])->name('packages.index');
+            Route::post('/packages', [AdminController::class, 'storePackage'])->name('packages.store');
+            Route::put('/packages/{id}', [AdminController::class, 'updatePackage'])->name('packages.update');
+            Route::post('/packages/{id}/toggle-status', [AdminController::class, 'togglePackageStatus'])->name('packages.toggle-status');
+            Route::delete('/packages/{id}', [AdminController::class, 'destroyPackage'])->name('packages.destroy');
+
+            // Promo Codes & Special User Discounts
+            Route::get('/promo-codes', [AdminController::class, 'promoCodes'])->name('promo-codes.index');
+            Route::post('/promo-codes', [AdminController::class, 'storePromoCode'])->name('promo-codes.store');
+            Route::post('/promo-codes/{id}/toggle-status', [AdminController::class, 'togglePromoCodeStatus'])->name('promo-codes.toggle-status');
+            Route::delete('/promo-codes/{id}', [AdminController::class, 'destroyPromoCode'])->name('promo-codes.destroy');
+
+            // Platform Policy Parameters
             Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
             Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
             Route::post('/discounts', [AdminController::class, 'createDiscount'])->name('discounts.store');

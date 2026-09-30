@@ -16,5 +16,8 @@ class DatabaseSeeder extends Seeder
 
         // 2. Auto-create Master Super Administrator
         $this->call(SuperAdminSeeder::class);
+
+        // 3. Dynamic Subscription Plans
+        $this->call(SubscriptionPlanSeeder::class);
     }
 }
