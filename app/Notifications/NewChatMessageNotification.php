@@ -73,6 +73,7 @@ class NewChatMessageNotification extends Notification implements ShouldBroadcast
     {
         return [
             new PrivateChannel('App.Models.User.'.$this->targetUserId),
+            new PrivateChannel('user.'.$this->targetUserId),
         ];
     }
 }

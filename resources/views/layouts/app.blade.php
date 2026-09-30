@@ -678,6 +678,10 @@
                     // Standard Laravel notification channel: App.Models.User.{id}
                     window.Echo.private('App.Models.User.' + userId)
                         .notification(handleReverbNotification);
+
+                    // Custom short user channel: user.{id}
+                    window.Echo.private('user.' + userId)
+                        .notification(handleReverbNotification);
                 }
             @endauth
         });
