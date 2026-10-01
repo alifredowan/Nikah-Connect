@@ -155,6 +155,24 @@
             @endforeach
         </div>
 
+        <!-- Payment Methods & Security Guarantee Banner -->
+        <div class="max-w-4xl mx-auto mt-12 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
+            <div class="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-700 dark:text-slate-300">
+                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400">
+                    <span>💳</span> Stripe Checkout
+                </span>
+                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sky-700 dark:text-sky-400">
+                    <span>🅿️</span> PayPal Express
+                </span>
+                <span class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                    Visa • Mastercard • Amex • Apple Pay • Google Pay
+                </span>
+            </div>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500">
+                🔒 All transactions are protected with bank-grade 256-bit SSL encryption. We never store raw credit card numbers. Cancel your subscription anytime with one click.
+            </p>
+        </div>
+
     </div>
 </div>
 @endsection

@@ -7,6 +7,7 @@ use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\InterestController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/pricing', [SubscriptionController::class, 'pricing'])->name('subscription.pricing');
 Route::get('/photos/{photo}/view', [PhotoController::class, 'show'])->name('photos.view');
+
+// Payment Gateway Webhooks (Public)
+Route::post('/webhook/stripe', [PaymentWebhookController::class, 'handleStripe'])->name('webhook.stripe');
+Route::post('/webhook/paypal', [PaymentWebhookController::class, 'handlePayPal'])->name('webhook.paypal');
 
 // Guest Auth routes
 Route::middleware('guest')->group(function () {
@@ -80,6 +85,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
     Route::post('/checkout/validate-promo', [SubscriptionController::class, 'validatePromo'])->name('subscription.validate-promo');
     Route::post('/checkout/process', [SubscriptionController::class, 'process'])->name('subscription.process');
+    Route::get('/checkout/stripe/success', [SubscriptionController::class, 'stripeSuccess'])->name('subscription.stripe.success');
+    Route::get('/checkout/paypal/success', [SubscriptionController::class, 'paypalSuccess'])->name('subscription.paypal.success');
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
 
     // Admin & Moderation Console

@@ -19,6 +19,9 @@ class Subscription extends Model
         'ends_at',
         'renews_at',
         'payment_method',
+        'payment_id',
+        'currency',
+        'payment_details',
         'amount_paid',
     ];
 
@@ -29,6 +32,7 @@ class Subscription extends Model
             'ends_at' => 'datetime',
             'renews_at' => 'datetime',
             'amount_paid' => 'decimal:2',
+            'payment_details' => 'array',
         ];
     }
 
