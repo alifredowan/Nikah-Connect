@@ -53,6 +53,11 @@ class QuotaService
             return;
         }
 
+        // Pro users with Incognito Mode enabled browse privately without leaving a visit trace
+        if ($viewer->isPro() && $viewer->is_incognito) {
+            return;
+        }
+
         ProfileView::firstOrCreate([
             'viewer_id' => $viewer->id,
             'viewed_id' => $viewedUserId,

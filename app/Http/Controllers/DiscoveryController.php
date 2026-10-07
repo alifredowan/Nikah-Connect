@@ -37,11 +37,12 @@ class DiscoveryController extends Controller
             $targetGender = $request->input('gender', 'female');
         }
 
-        $query = Profile::with(['user', 'primaryPhoto', 'photos'])
+        $query = Profile::with(['user.activeSubscription', 'primaryPhoto', 'photos'])
             ->where('user_id', '!=', $currentUser->id)
             ->whereHas('user', function ($q) use ($targetGender) {
                 $q->where('is_active', true)
                     ->where('role', 'seeker')
+                    ->where('marital_status', '!=', 'married')
                     ->where('gender', $targetGender);
             });
 
@@ -103,7 +104,9 @@ class DiscoveryController extends Controller
         // Daily quotas for current user
         $quotaStats = $this->quotaService->getUsageStats($currentUser);
 
-        return view('discovery.index', compact('profiles', 'dailyRecommendations', 'quotaStats'));
+        $bookmarkedUserIds = $currentUser->bookmarks()->pluck('bookmarked_user_id')->all();
+
+        return view('discovery.index', compact('profiles', 'dailyRecommendations', 'quotaStats', 'bookmarkedUserIds'));
     }
 
     public function show(int $userId): View|RedirectResponse
@@ -115,6 +118,10 @@ class DiscoveryController extends Controller
 
         if (! $profile || ! $targetUser->is_active || $targetUser->role !== 'seeker' || $targetUser->id === $currentUser->id) {
             return redirect()->route('discovery.index')->with('error', 'Profile not found or not available for matrimonial matching.');
+        }
+
+        if ($targetUser->isMarried() && $currentUser->spouse()?->id !== $targetUser->id) {
+            return redirect()->route('discovery.index')->with('info', 'Alhamdulillah! This candidate has successfully completed their Nikah and is no longer available for matching.');
         }
 
         if ($currentUser->role === 'seeker' && $currentUser->gender && $targetUser->gender && $currentUser->gender === $targetUser->gender) {
@@ -146,7 +153,10 @@ class DiscoveryController extends Controller
         // Check active linked Wali
         $activeWaliLink = $targetUser->waliLinksAsSeeker()->where('status', 'active')->first();
 
-        return view('discovery.show', compact('targetUser', 'profile', 'compatibilityScore', 'isPhotoVisible', 'existingInterest', 'activeWaliLink'));
+        // Check if shortlisted by current user
+        $isBookmarked = $currentUser->hasBookmarked($targetUser->id);
+
+        return view('discovery.show', compact('targetUser', 'profile', 'compatibilityScore', 'isPhotoVisible', 'existingInterest', 'activeWaliLink', 'isBookmarked'));
     }
 
     public function saveSearch(Request $request): RedirectResponse

@@ -34,10 +34,28 @@
                 </div>
             </div>
 
-            <!-- Report User Button -->
-            <button type="button" onclick="document.getElementById('reportChatModal').classList.remove('hidden')" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300">
-                🚩 Report
-            </button>
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+                @if($marriage)
+                    <a href="{{ route('marriages.celebration') }}" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1 transition">
+                        <span>💍</span>
+                        @if($marriage->isConfirmed())
+                            <span>Nikah Mubarak ↗</span>
+                        @else
+                            <span>Nikah Pending ↗</span>
+                        @endif
+                    </a>
+                @elseif($otherUser && !Auth::user()->isMarried() && !$otherUser->isMarried() && $conversation->status !== 'locked' && (!$waliObserver || Auth::id() !== $waliObserver->id))
+                    <button type="button" onclick="document.getElementById('declareNikahModal').classList.remove('hidden')" class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900/70 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center gap-1 transition cursor-pointer">
+                        <span>💍</span> Declare Nikah
+                    </button>
+                @endif
+
+                <!-- Report User Button -->
+                <button type="button" onclick="document.getElementById('reportChatModal').classList.remove('hidden')" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300">
+                    🚩 Report
+                </button>
+            </div>
         </div>
 
         <!-- Chaperone Banner (FR-4.3, 6.2) -->
@@ -105,7 +123,12 @@
                 }
             @endphp
 
-            @if($isViewOnlyWali)
+            @if($conversation->status === 'locked')
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800 text-center py-3 px-4 text-xs text-slate-600 dark:text-slate-300 bg-slate-100/70 dark:bg-slate-800/60 rounded-xl flex items-center justify-center gap-2">
+                    <span>🔒</span>
+                    <span>This conversation is locked ({{ $conversation->locked_reason === 'candidate_married' ? 'Participant completed Nikah milestone' : 'Archived' }}). Messages are read-only.</span>
+                </div>
+            @elseif($isViewOnlyWali)
                 <div class="pt-4 border-t border-slate-100 dark:border-slate-800 text-center py-3 text-xs text-purple-700 dark:text-purple-300 bg-purple-50/50 dark:bg-purple-950/20 rounded-xl">
                     🛡️ You are observing this conversation with <strong>View Only</strong> guardian permissions.
                 </div>
@@ -160,6 +183,54 @@
         </form>
     </div>
 </div>
+
+@if($otherUser && !Auth::user()->isMarried() && !$otherUser->isMarried() && $conversation->status !== 'locked')
+<!-- Declare Nikah Completion Modal -->
+<div id="declareNikahModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+        <div class="flex items-start justify-between">
+            <div>
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Sacred Milestone</span>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white font-heading mt-0.5">Declare Nikah Milestone</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Declare that you and {{ $otherUser->name }} have completed your Nikah under the Sunnah of Allah's Messenger ﷺ.
+                </p>
+            </div>
+            <button type="button" onclick="document.getElementById('declareNikahModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">✕</button>
+        </div>
+
+        <form action="{{ route('marriages.initiate') }}" method="POST" class="space-y-4">
+            @csrf
+            <input type="hidden" name="spouse_id" value="{{ $otherUser->id }}">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nikah Date</label>
+                <input type="date" name="marriage_date" value="{{ date('Y-m-d') }}" required
+                       class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Personal Note / Details (Optional)</label>
+                <textarea name="confirmation_notes" rows="3" placeholder="Alhamdulillah our families agreed and Nikah was held with Islamic etiquette..."
+                          class="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-[11px] text-amber-800 dark:text-amber-200">
+                ⚠️ Once submitted, a confirmation prompt will be sent to <strong>{{ $otherUser->name }}</strong>. Upon their confirmation, both accounts will be transitioned to Married, inquiries closed, and privacy shielded.
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('declareNikahModal').classList.add('hidden')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer">
+                    💍 Submit Nikah Declaration
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

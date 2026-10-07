@@ -41,6 +41,11 @@
                                 <a href="{{ route('discovery.show', $interest->sender_id) }}" class="font-bold text-sm text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
                                     {{ $interest->sender->name }}
                                 </a>
+                                @if($interest->sender->isPro())
+                                    <span class="bg-amber-500 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-2xs" title="Sender has a Pro Matrimonial Membership">
+                                        🌟 PRIORITY PROPOSAL
+                                    </span>
+                                @endif
                                 @if($interest->sender->is_verified)
                                     <span class="bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">✓ Verified</span>
                                 @endif
@@ -90,6 +95,10 @@
                                     </a>
                                 @endif
                             </div>
+                        @elseif($interest->status === 'closed_married')
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                                💍 Closed (Nikah Completed)
+                            </span>
                         @else
                             <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 capitalize">
                                 {{ $interest->status }}
@@ -157,6 +166,10 @@
                         @elseif($interest->status === 'pending')
                             <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300">
                                 ⏳ Pending Recipient Response
+                            </span>
+                        @elseif($interest->status === 'closed_married')
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                                💍 Closed (Nikah Completed)
                             </span>
                         @else
                             <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 capitalize">

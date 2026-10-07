@@ -6,6 +6,7 @@ use App\Events\MessageSentEvent;
 use App\Models\AuditLog;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use App\Models\Marriage;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\WaliLink;
@@ -113,7 +114,16 @@ class ChatController extends Controller
         $waliObserver = $conversation->participants->firstWhere('pivot.role', 'wali_chaperone');
         $otherUser = $conversation->getOtherParticipant($user);
 
-        return view('chat.show', compact('conversation', 'otherUser', 'waliObserver'));
+        $marriage = null;
+        if ($otherUser) {
+            $marriage = Marriage::where(function ($q) use ($user, $otherUser) {
+                $q->where('groom_id', $user->id)->where('bride_id', $otherUser->id);
+            })->orWhere(function ($q) use ($user, $otherUser) {
+                $q->where('groom_id', $otherUser->id)->where('bride_id', $user->id);
+            })->first();
+        }
+
+        return view('chat.show', compact('conversation', 'otherUser', 'waliObserver', 'marriage'));
     }
 
     public function sendMessage(Request $request, int $conversationId): RedirectResponse|JsonResponse
@@ -159,6 +169,16 @@ class ChatController extends Controller
             }
 
             return redirect()->route('chat.index')->with('error', 'You are not a participant in this conversation.');
+        }
+
+        // Prevent sending messages in locked/archived conversations
+        if ($conversation->status === 'locked') {
+            $msg = 'This conversation is locked ('.($conversation->locked_reason ? str_replace('_', ' ', $conversation->locked_reason) : 'closed').').';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => $msg], 403);
+            }
+
+            return back()->with('error', $msg);
         }
 
         // If Wali has view_only permission, prevent them from sending

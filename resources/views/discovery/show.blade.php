@@ -42,8 +42,13 @@
                             @endif
                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white font-heading">{{ $targetUser->name }}</h1>
+                                @if($targetUser->isPro())
+                                    <span class="bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs" title="Pro Matrimonial Member">
+                                        👑 PRO MEMBER
+                                    </span>
+                                @endif
                                 @if($targetUser->is_verified)
                                     <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Government ID Verified (FR-1.4)">
                                         ✓ Verified Candidate
@@ -62,7 +67,7 @@
                                     🕌 {{ str_replace('_', ' ', $profile->prayer_frequency ?? 'Practicing') }}
                                 </span>
                                 @if($profile->wali_required || ($activeWaliLink ?? null))
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 flex items-center gap-1">
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 dark:purple-950/80 text-purple-800 dark:text-purple-300 flex items-center gap-1">
                                         🛡️ Guardian (Wali): {{ ($activeWaliLink ?? null) ? ($activeWaliLink->wali_name . ' (' . ucfirst(str_replace('_', ' ', $activeWaliLink->relationship_type)) . ')') : 'Chaperone Required' }}
                                     </span>
                                 @endif
@@ -70,49 +75,65 @@
                         </div>
                     </div>
 
-                    <!-- Interest Action Button -->
-                    <div class="w-full sm:w-auto">
-                        @if($existingInterest)
-                            @if($existingInterest->status === 'accepted')
-                                <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                    ✓ Interest Accepted
-                                    @if($existingInterest->conversation)
-                                        <a href="{{ route('chat.show', $existingInterest->conversation->id) }}" class="underline ml-2 text-emerald-900 dark:text-emerald-200">Open Messages &rarr;</a>
-                                    @endif
-                                </div>
-                            @elseif($existingInterest->status === 'pending')
-                                @if($existingInterest->recipient_id === Auth::id())
-                                    <div class="flex items-center gap-2">
-                                        <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="action" value="accept">
-                                            <button type="submit" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/15 transition flex items-center gap-1.5 cursor-pointer">
-                                                <span>✓</span> Accept Interest
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="action" value="decline">
-                                            <button type="submit" class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer">
-                                                <span>✕</span> Decline
-                                            </button>
-                                        </form>
+                    <!-- Actions: Interest, Shortlist & Print Biodata -->
+                    <div class="w-full sm:w-auto flex flex-col sm:items-end gap-2.5">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <form action="{{ route('bookmarks.toggle', $targetUser->id) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="px-3 py-2.5 rounded-xl border {{ ($isBookmarked ?? false) ? 'bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700' }} text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs">
+                                    <span>⭐</span> {{ ($isBookmarked ?? false) ? 'Shortlisted' : 'Shortlist' }}
+                                </button>
+                            </form>
+
+                            <a href="{{ route('profile.biodata.show', $targetUser->id) }}" target="_blank"
+                               class="px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1 shadow-xs" title="Printable Shariah Biodata">
+                                <span>🖨️</span> Biodata
+                            </a>
+                        </div>
+
+                        <div>
+                            @if($existingInterest)
+                                @if($existingInterest->status === 'accepted')
+                                    <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                        ✓ Interest Accepted
+                                        @if($existingInterest->conversation)
+                                            <a href="{{ route('chat.show', $existingInterest->conversation->id) }}" class="underline ml-2 text-emerald-900 dark:text-emerald-200">Open Messages &rarr;</a>
+                                        @endif
                                     </div>
+                                @elseif($existingInterest->status === 'pending')
+                                    @if($existingInterest->recipient_id === Auth::id())
+                                        <div class="flex items-center gap-2">
+                                            <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="action" value="accept">
+                                                <button type="submit" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/15 transition flex items-center gap-1.5 cursor-pointer">
+                                                    <span>✓</span> Accept Interest
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('interests.respond', $existingInterest->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="action" value="decline">
+                                                <button type="submit" class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer">
+                                                    <span>✕</span> Decline
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                                            <span>⏳</span> Interest Sent (Pending)
+                                        </div>
+                                    @endif
                                 @else
-                                    <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                                        <span>⏳</span> Interest Request Sent (Pending Response)
+                                    <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 capitalize border border-slate-200 dark:border-slate-700">
+                                        Status: {{ ucfirst($existingInterest->status) }}
                                     </div>
                                 @endif
                             @else
-                                <div class="px-4 py-2.5 rounded-xl text-xs font-bold text-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 capitalize border border-slate-200 dark:border-slate-700">
-                                    Status: {{ ucfirst($existingInterest->status) }}
-                                </div>
+                                <button type="button" onclick="document.getElementById('sendInterestModal').classList.remove('hidden')" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/15 transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <span>💌</span> Express Halal Interest
+                                </button>
                             @endif
-                        @else
-                            <button type="button" onclick="document.getElementById('sendInterestModal').classList.remove('hidden')" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/15 transition flex items-center justify-center gap-2 cursor-pointer">
-                                <span>💌</span> Express Halal Interest
-                            </button>
-                        @endif
+                        </div>
                     </div>
                 </div>
 

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Interest;
 use App\Models\PhotoAccessGrant;
 use App\Models\Profile;
+use App\Models\User;
 use App\Models\VerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -224,5 +226,45 @@ class ProfileController extends Controller
         ]);
 
         return back()->with('success', 'Photo access granted! The recipient can now view your unblurred photos.');
+    }
+
+    public function biodata(?int $userId = null): View|RedirectResponse
+    {
+        $currentUser = Auth::user();
+
+        if ($userId === null || $userId === $currentUser->id) {
+            $targetUser = $currentUser;
+            $profile = $currentUser->profile ?? Profile::create(['user_id' => $currentUser->id]);
+            $isOwner = true;
+            $isPhotoVisible = true;
+        } else {
+            $targetUser = User::with(['profile.photos', 'profile.primaryPhoto'])->findOrFail($userId);
+            $profile = $targetUser->profile;
+
+            if (! $profile || ! $targetUser->is_active || $targetUser->role !== 'seeker') {
+                return redirect()->route('discovery.index')->with('error', 'Profile not available.');
+            }
+
+            // Gating: If not owner, user must be Pro OR have mutual accepted interest
+            $hasAcceptedInterest = Interest::where(function ($q) use ($currentUser, $targetUser) {
+                $q->where('sender_id', $currentUser->id)->where('recipient_id', $targetUser->id);
+            })->orWhere(function ($q) use ($currentUser, $targetUser) {
+                $q->where('sender_id', $targetUser->id)->where('recipient_id', $currentUser->id);
+            })->where('status', 'accepted')->exists();
+
+            if (! $currentUser->isPro() && ! $hasAcceptedInterest) {
+                return redirect()->route('subscription.pricing')
+                    ->with('warning', 'Printing printable Islamic matrimonial biodatas for candidate suitors is an exclusive Pro feature. Upgrade to print candidate biodatas for your family consultation.');
+            }
+
+            $isOwner = false;
+            $isPhotoVisible = $profile->isPhotoVisibleTo($currentUser);
+        }
+
+        $activeWaliLink = $targetUser->waliLinksAsSeeker()
+            ->where('status', 'active')
+            ->first();
+
+        return view('profile.biodata', compact('targetUser', 'profile', 'isOwner', 'isPhotoVisible', 'activeWaliLink', 'currentUser'));
     }
 }

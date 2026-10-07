@@ -53,6 +53,14 @@ class InterestController extends Controller
             return back()->with('error', 'This user is not accepting matrimonial interest requests.');
         }
 
+        if ($sender->isMarried()) {
+            return back()->with('error', 'Your profile is currently marked as married. Married accounts cannot send new matrimonial proposals.');
+        }
+
+        if ($recipient->isMarried()) {
+            return back()->with('error', 'This candidate has completed their Nikah through Nikah Connect and is no longer accepting new proposals.');
+        }
+
         if ($sender->gender && $recipient->gender && $sender->gender === $recipient->gender) {
             return back()->with('error', 'Interest requests can only be sent to candidates of the opposite gender.');
         }

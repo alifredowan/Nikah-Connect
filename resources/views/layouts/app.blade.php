@@ -88,6 +88,9 @@
                         <a href="{{ route('chat.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
                             Messages
                         </a>
+                        <a href="{{ route('bookmarks.index') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition flex items-center gap-1">
+                            <span>⭐</span> Shortlist
+                        </a>
                         @if(Auth::user()->isWali() || Auth::user()->waliLinksAsWali()->exists())
                             <a href="{{ route('wali.dashboard') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition flex items-center gap-1">
                                 <span>🛡️ Wali Console</span>
@@ -403,6 +406,33 @@
                                 <a href="{{ route('subscription.pricing') }}" class="block px-4 py-2 text-sm text-amber-700 dark:text-amber-400 font-medium hover:bg-amber-50 dark:hover:bg-slate-800">
                                     ⭐ Membership Plan ({{ ucfirst(Auth::user()->plan) }})
                                 </a>
+                                <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                <div class="px-4 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                                    Pro Features
+                                </div>
+                                <a href="{{ route('profile.visitors') }}" class="flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-700 dark:hover:text-emerald-400">
+                                    <span>👁️ Who Viewed You</span>
+                                    <span class="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">PRO</span>
+                                </a>
+                                <a href="{{ route('bookmarks.index') }}" class="flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-700 dark:hover:text-emerald-400">
+                                    <span>⭐ Saved Candidates</span>
+                                    <span class="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">PRO</span>
+                                </a>
+                                <a href="{{ route('profile.biodata') }}" target="_blank" class="flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-700 dark:hover:text-emerald-400">
+                                    <span>🖨️ Printable Biodata</span>
+                                    <span class="text-[10px] font-bold text-slate-400">PDF</span>
+                                </a>
+                                @if(Auth::user()->isMarried() || Auth::user()->pendingMarriage())
+                                    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                    <a href="{{ route('marriages.celebration') }}" class="flex items-center justify-between px-4 py-2 text-sm text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition">
+                                        <span>💍 Nikah Milestone</span>
+                                        @if(Auth::user()->pendingMarriage())
+                                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 animate-pulse">Pending</span>
+                                        @else
+                                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">Mubarak</span>
+                                        @endif
+                                    </a>
+                                @endif
                                 @if(Auth::user()->isSuperAdmin() || Auth::user()->hasPermission('manage_settings'))
                                     <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                                     <div class="px-4 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -439,6 +469,29 @@
             </div>
         </div>
     </header>
+
+    @auth
+        @if(Auth::user()->pendingMarriage())
+            @php $pendingM = Auth::user()->pendingMarriage(); @endphp
+            <div class="bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-amber-500/20 border-b border-amber-300 dark:border-amber-700/60 px-4 py-3 text-slate-900 dark:text-slate-100 text-xs font-semibold">
+                <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base animate-bounce">💍</span>
+                        <span>
+                            @if(Auth::id() !== $pendingM->initiated_by_user_id)
+                                <strong>Nikah Declaration Pending:</strong> {{ $pendingM->initiator->name }} declared you have completed your Nikah! Please review and confirm.
+                            @else
+                                <strong>Nikah Declaration Submitted:</strong> Waiting for {{ $pendingM->spouseOf(Auth::user())?->name ?? 'spouse' }} to confirm your Nikah milestone.
+                            @endif
+                        </span>
+                    </div>
+                    <a href="{{ route('marriages.celebration') }}" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-xs transition shrink-0">
+                        View Nikah Celebration &rarr;
+                    </a>
+                </div>
+            </div>
+        @endif
+    @endauth
 
     <!-- Flash Alerts -->
     @if(session('success'))

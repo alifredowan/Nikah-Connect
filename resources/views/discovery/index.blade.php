@@ -12,23 +12,31 @@
                 <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white font-heading">Halal Match Discovery</h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Discover practicing Muslim candidates based on deen, values, and life goals.</p>
             </div>
-            <!-- Quota Badge -->
-            <div class="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-4 py-2.5 rounded-xl text-xs">
-                <div>
-                    <span class="font-bold text-emerald-950 dark:text-emerald-200">Daily Quota:</span>
-                    @if($quotaStats['views_limit'] === 'Unlimited')
-                        <span class="text-emerald-700 dark:text-emerald-400 font-semibold ml-1">Unlimited Views & Interests ({{ ucfirst($quotaStats['plan']) }})</span>
-                    @else
-                        <span class="text-emerald-800 dark:text-emerald-300 font-medium ml-1">
-                            {{ $quotaStats['views_remaining'] }} / {{ $quotaStats['views_limit'] }} views left today
-                        </span>
+            <!-- Quick Pro Shortcuts & Quota Badge -->
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                <a href="{{ route('profile.visitors') }}" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
+                    <span>👁️</span> Visitors
+                </a>
+                <a href="{{ route('bookmarks.index') }}" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
+                    <span>⭐</span> Shortlist
+                </a>
+                <div class="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-4 py-2.5 rounded-xl text-xs">
+                    <div>
+                        <span class="font-bold text-emerald-950 dark:text-emerald-200">Quota:</span>
+                        @if($quotaStats['views_limit'] === 'Unlimited')
+                            <span class="text-emerald-700 dark:text-emerald-400 font-semibold ml-1">Unlimited ({{ ucfirst($quotaStats['plan']) }})</span>
+                        @else
+                            <span class="text-emerald-800 dark:text-emerald-300 font-medium ml-1">
+                                {{ $quotaStats['views_remaining'] }} / {{ $quotaStats['views_limit'] }}
+                            </span>
+                        @endif
+                    </div>
+                    @if($quotaStats['plan'] === 'free')
+                        <a href="{{ route('subscription.pricing') }}" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] shadow-xs transition">
+                            Upgrade
+                        </a>
                     @endif
                 </div>
-                @if($quotaStats['plan'] === 'free')
-                    <a href="{{ route('subscription.pricing') }}" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] shadow-xs transition">
-                        Upgrade
-                    </a>
-                @endif
             </div>
         </div>
 
@@ -46,7 +54,12 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     @foreach($dailyRecommendations as $match)
                         <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-emerald-100 dark:border-emerald-900/60 p-5 shadow-xs hover:shadow-md transition relative flex flex-col justify-between">
-                            <div class="absolute top-4 right-4 z-10">
+                            <div class="absolute top-4 right-4 z-10 flex items-center gap-1.5">
+                                @if($match->user->isPro())
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-slate-950 shadow-xs flex items-center gap-1" title="Pro Matrimonial Member">
+                                        👑 PRO
+                                    </span>
+                                @endif
                                 <span class="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                     {{ $match->compatibility_score }}% Match
                                 </span>
@@ -84,6 +97,14 @@
                                 <a href="{{ route('discovery.show', $match->user_id) }}" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold text-center shadow-xs transition">
                                     View Full Profile
                                 </a>
+                                @php $isBookmarkedMatch = in_array($match->user_id, $bookmarkedUserIds ?? [], true); @endphp
+                                <form action="{{ route('bookmarks.toggle', $match->user_id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" title="{{ $isBookmarkedMatch ? 'Remove from shortlist' : 'Shortlist candidate for family (Pro)' }}"
+                                            class="p-2 rounded-xl border {{ $isBookmarkedMatch ? 'bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-amber-600 hover:bg-slate-50 dark:hover:bg-slate-800' }} transition cursor-pointer text-xs">
+                                        ⭐
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     @endforeach
@@ -195,11 +216,18 @@
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/50 text-white backdrop-blur-xs flex items-center gap-1">
                                         🔒 Blurred (FR-2.2)
                                     </span>
-                                    @if($p->user->is_verified)
-                                        <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                                            ✓ Verified
-                                        </span>
-                                    @endif
+                                    <div class="flex items-center gap-1">
+                                        @if($p->user->isPro())
+                                            <span class="bg-amber-500 text-slate-950 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                                                👑 PRO
+                                            </span>
+                                        @endif
+                                        @if($p->user->is_verified)
+                                            <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                                                ✓ Verified
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 <!-- Overlay text -->
@@ -236,10 +264,18 @@
                             </div>
                         </div>
 
-                        <div class="p-4 pt-0">
-                            <a href="{{ route('discovery.show', $p->user_id) }}" class="block text-center w-full py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white text-xs font-bold transition shadow-xs">
+                        <div class="p-4 pt-0 flex items-center gap-2">
+                            <a href="{{ route('discovery.show', $p->user_id) }}" class="flex-1 text-center py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white text-xs font-bold transition shadow-xs">
                                 View Profile
                             </a>
+                            @php $isBookmarkedGrid = in_array($p->user_id, $bookmarkedUserIds ?? [], true); @endphp
+                            <form action="{{ route('bookmarks.toggle', $p->user_id) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" title="{{ $isBookmarkedGrid ? 'Remove from shortlist' : 'Shortlist candidate for family (Pro)' }}"
+                                        class="p-2.5 rounded-xl border {{ $isBookmarkedGrid ? 'bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-amber-600 hover:bg-slate-50 dark:hover:bg-slate-800' }} transition cursor-pointer text-xs">
+                                    ⭐
+                                </button>
+                            </form>
                         </div>
                     </div>
                 @empty

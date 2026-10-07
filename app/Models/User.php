@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -34,6 +35,7 @@ class User extends Authenticatable
         'marital_status',
         'is_verified',
         'is_active',
+        'is_incognito',
         'two_factor_enabled',
         'two_factor_secret',
         'deactivation_reason',
@@ -53,6 +55,7 @@ class User extends Authenticatable
             'dob' => 'date',
             'is_verified' => 'boolean',
             'is_active' => 'boolean',
+            'is_incognito' => 'boolean',
             'two_factor_enabled' => 'boolean',
             'permissions' => 'array',
             'password' => 'hashed',
@@ -75,7 +78,7 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
-    public function photos(): HasMany
+    public function photos(): HasManyThrough
     {
         return $this->hasManyThrough(Photo::class, Profile::class);
     }
@@ -172,6 +175,65 @@ class User extends Authenticatable
         return $this->hasMany(ProfileView::class, 'viewed_id');
     }
 
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class, 'user_id');
+    }
+
+    public function bookmarkedBy(): HasMany
+    {
+        return $this->hasMany(Bookmark::class, 'bookmarked_user_id');
+    }
+
+    public function hasBookmarked(int $targetUserId): bool
+    {
+        return $this->bookmarks()->where('bookmarked_user_id', $targetUserId)->exists();
+    }
+
+    public function marriagesAsGroom(): HasMany
+    {
+        return $this->hasMany(Marriage::class, 'groom_id');
+    }
+
+    public function marriagesAsBride(): HasMany
+    {
+        return $this->hasMany(Marriage::class, 'bride_id');
+    }
+
+    public function activeMarriage(): ?Marriage
+    {
+        return Marriage::with(['groom.profile', 'bride.profile'])
+            ->where(function ($q) {
+                $q->where('groom_id', $this->id)->orWhere('bride_id', $this->id);
+            })
+            ->where('status', 'confirmed')
+            ->latest('confirmed_at')
+            ->first();
+    }
+
+    public function pendingMarriage(): ?Marriage
+    {
+        return Marriage::with(['groom.profile', 'bride.profile', 'initiator'])
+            ->where(function ($q) {
+                $q->where('groom_id', $this->id)->orWhere('bride_id', $this->id);
+            })
+            ->where('status', 'pending_confirmation')
+            ->latest()
+            ->first();
+    }
+
+    public function spouse(): ?self
+    {
+        $marriage = $this->activeMarriage();
+
+        return $marriage ? $marriage->spouseOf($this) : null;
+    }
+
+    public function isMarried(): bool
+    {
+        return $this->marital_status === 'married' || $this->activeMarriage() !== null;
+    }
+
     // Role helpers
     public function isSuperAdmin(): bool
     {
@@ -233,6 +295,11 @@ class User extends Authenticatable
         }
 
         return true;
+    }
+
+    public function isPro(): bool
+    {
+        return $this->isPremium();
     }
 
     public function isPremiumPlus(): bool

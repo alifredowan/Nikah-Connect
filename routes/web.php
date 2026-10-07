@@ -2,14 +2,17 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\InterestController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\MarriageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileVisitorController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WaliController;
 use Illuminate\Support\Facades\Route;
@@ -42,7 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('/account/deactivate', [AuthController::class, 'deactivate'])->name('account.deactivate');
 
-    // Profile Management
+    // Profile Management & Pro Features
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -51,6 +54,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/photos/{id}', [ProfileController::class, 'deletePhoto'])->name('profile.photos.delete');
     Route::post('/profile/photos/grant/{userId}', [ProfileController::class, 'grantPhotoAccess'])->name('profile.photos.grant');
     Route::post('/profile/verification', [ProfileController::class, 'submitVerification'])->name('profile.verification.submit');
+    Route::get('/profile/visitors', [ProfileVisitorController::class, 'index'])->name('profile.visitors');
+    Route::post('/profile/incognito', [ProfileVisitorController::class, 'toggleIncognito'])->name('profile.incognito.toggle');
+    Route::get('/profile/biodata', [ProfileController::class, 'biodata'])->name('profile.biodata');
+    Route::get('/profile/{id}/biodata', [ProfileController::class, 'biodata'])->name('profile.biodata.show');
+
+    // Pro Shortlisted Profiles (Bookmarks)
+    Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
+    Route::post('/bookmarks/{userId}/toggle', [BookmarkController::class, 'toggle'])->name('bookmarks.toggle');
+    Route::post('/bookmarks/{bookmarkId}/notes', [BookmarkController::class, 'updateNotes'])->name('bookmarks.notes');
 
     // Discovery & Matching
     Route::get('/discover', [DiscoveryController::class, 'index'])->name('discovery.index');
@@ -80,6 +92,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/messages/{id}', [ChatController::class, 'show'])->name('chat.show');
     Route::post('/messages/{id}', [ChatController::class, 'sendMessage'])->name('chat.send');
     Route::post('/reports', [ChatController::class, 'reportUser'])->name('reports.store');
+
+    // Nikah Mubarak & Marriage Completion Milestone
+    Route::get('/nikah-mubarak', [MarriageController::class, 'celebration'])->name('marriages.celebration');
+    Route::post('/marriages/initiate', [MarriageController::class, 'initiate'])->name('marriages.initiate');
+    Route::post('/marriages/{id}/confirm', [MarriageController::class, 'confirm'])->name('marriages.confirm');
+    Route::post('/marriages/{id}/decline', [MarriageController::class, 'decline'])->name('marriages.decline');
+    Route::post('/marriages/{id}/story', [MarriageController::class, 'submitStory'])->name('marriages.story');
 
     // Subscription & Checkout
     Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');

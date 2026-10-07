@@ -149,11 +149,12 @@ class MatchingEngineService
             return collect();
         }
 
-        $query = Profile::with(['user', 'primaryPhoto', 'photos'])
+        $query = Profile::with(['user.activeSubscription', 'primaryPhoto', 'photos'])
             ->where('user_id', '!=', $user->id)
             ->whereHas('user', function ($q) use ($targetGender) {
                 $q->where('is_active', true)
                     ->where('role', 'seeker')
+                    ->where('marital_status', '!=', 'married')
                     ->where('gender', $targetGender);
             });
 
@@ -163,6 +164,10 @@ class MatchingEngineService
             $candidate->compatibility_score = $this->computeCompatibility($profile, $candidate);
 
             return $candidate;
-        })->sortByDesc('compatibility_score')->take($limit)->values();
+        })->sortByDesc(function (Profile $candidate) {
+            $boostScore = $candidate->user->isPremium() ? 1000 : 0;
+
+            return $boostScore + $candidate->compatibility_score;
+        })->take($limit)->values();
     }
 }

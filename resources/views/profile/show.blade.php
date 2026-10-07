@@ -6,6 +6,34 @@
 <div class="py-10 bg-slate-50 dark:bg-slate-950 min-h-screen">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+        @if($user->isMarried() || $user->activeMarriage())
+            @php $marriage = $user->activeMarriage(); @endphp
+            <div class="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900 text-white rounded-3xl p-6 border border-emerald-600/40 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4 text-center sm:text-left">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-2xl shadow-md shrink-0">
+                        💍
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 justify-center sm:justify-start">
+                            <span class="text-xs font-black uppercase tracking-wider text-amber-300">Nikah Mubarak</span>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">Sacred Union Completed</span>
+                        </div>
+                        <h2 class="text-base font-bold font-heading mt-0.5">
+                            @if($marriage && $marriage->spouseOf($user))
+                                United in Nikah with {{ $marriage->spouseOf($user)->name }}
+                            @else
+                                Alhamdulillah, Marital Status: Married
+                            @endif
+                        </h2>
+                        <p class="text-[11px] text-slate-300">Your profile is safely shielded and past matrimonial inquiries have concluded.</p>
+                    </div>
+                </div>
+                <a href="{{ route('marriages.celebration') }}" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-md transition shrink-0">
+                    View Celebration & Story &rarr;
+                </a>
+            </div>
+        @endif
+
         <!-- Top Overview & Completeness Card (FR-2.4) -->
         <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs p-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
@@ -20,8 +48,13 @@
                         @endif
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <h1 class="text-xl font-extrabold text-slate-900 dark:text-white font-heading">{{ $user->name }}</h1>
+                            @if($user->isPro())
+                                <span class="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs" title="Pro Matrimonial Member">
+                                    👑 PRO MEMBER
+                                </span>
+                            @endif
                             @if($user->is_verified)
                                 <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                                     ✓ Verified Badge
@@ -38,8 +71,17 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('profile.edit') }}" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                    <a href="{{ route('profile.biodata') }}" target="_blank" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1 border border-slate-200 dark:border-slate-700" title="Printable Shariah Biodata">
+                        <span>🖨️</span> Biodata
+                    </a>
+                    <a href="{{ route('profile.visitors') }}" class="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-800/80">
+                        <span>👁️</span> Visitors
+                    </a>
+                    <a href="{{ route('bookmarks.index') }}" class="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-xs font-bold transition flex items-center gap-1 border border-amber-200/80 dark:border-amber-800/80">
+                        <span>⭐</span> Shortlist
+                    </a>
+                    <a href="{{ route('profile.edit') }}" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition">
                         ✏️ Edit Profile
                     </a>
                 </div>
