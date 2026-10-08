@@ -10,7 +10,7 @@ APP_DIR="${APP_DIR:-/var/www/nikah}"
 BRANCH="${BRANCH:-main}"
 PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
-PHP_FPM_SERVICE="${PHP_FPM_SERVICE:-php8.4-fpm}"
+PHP_FPM_SERVICE="${PHP_FPM_SERVICE:-php8.5-fpm}"
 WEB_USER="${WEB_USER:-www-data}"
 WEB_GROUP="${WEB_GROUP:-www-data}"
 
